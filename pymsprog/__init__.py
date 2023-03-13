@@ -1,14 +1,15 @@
 
 """
-pymsprog
+This module defines the functions to compute MS progression.
 """
+
+__version__ = "0.1.0"
+
 
 import numpy as np
 import pandas as pd
 
 import datetime
-
-from utils import col_to_date, compute_delta
 
 #####################################################################################
 
@@ -495,11 +496,19 @@ def col_to_date(column, format=None, remove_na=False):
     return column_all
 
 
-## NOTE: difference in days between *df columns* dt and dt0: (dt-dt0).dt.days
-
 #####################################################################################
 
 def age_column(date, dob, col_name='Age', remove_na=False):
+    """
+    Compute difference between two columns of dates.
+    Arguments:
+     date: end date.
+     dob: start date.
+     col_name: name of new column.
+     remove_na: whether to remove NaN entries.
+    Returns:
+     difference in days.
+    """
     date, dob = col_to_date(date, remove_na=remove_na), col_to_date(dob, remove_na=remove_na)
 
     diff = pd.Series(np.nan, index=date.index, name=col_name)
