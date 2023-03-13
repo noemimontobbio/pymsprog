@@ -9,6 +9,14 @@ readme = "README.md"
 python = "^3.7"
 
 
+[tool.poetry.group.dev.dependencies]
+scriv = "^1.2.1"
+
+
+[tool.scriv]
+format = "md"
+version = "literal: pymsprog/__init__.py: __version__"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
