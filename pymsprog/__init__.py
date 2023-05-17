@@ -14,10 +14,10 @@ import datetime
 #####################################################################################
 
 def MSprog(data, subj_col, value_col, date_col,
-           relapse=None, rsubj_col=None, rdate_col=None,
-           outcome='edss', conf_months=[6,12], conf_tol=45, conf_left=False, rel_infl=30,
+           relapse=None, rsubj_col=None, rdate_col=None, outcome='edss',
+           conf_months=[6,12], conf_tol=45, conf_left=False, require_sust_months=0, rel_infl=30,
            event='multiple', baseline='roving', sub_threshold=False, relapse_rebl=True,
-           min_value=0, include_dates=False, include_value=False, verbose=2):
+           min_value=0, prog_last_visit=False, include_dates=False, include_value=False, verbose=2):
     """
     Compute MS progression from longitudinal data.
     ARGUMENTS:
@@ -29,14 +29,16 @@ def MSprog(data, subj_col, value_col, date_col,
         rsubj_col / rdate_col, str: name of columns for relapse data, if different from outcome data
         outcome, str: 'edss'[default],'nhpt','t25fw','sdmt'
         conf_months, int or list-like : period before confirmation (months)
-        conf_tol, int: tolerance window for confirmation visit (days): [t(months)-conf_tol(days), t(months)+conf_tol(days)]
+        conf_tol, int or list-like of length 1 or 2: tolerance window for confirmation visit (days): [t(months)-conf_tol[0](days), t(months)+conf_tol[0](days)]
         conf_left, bool: if True, confirmation window is [t(months)-conf_tol(days), inf)
+        require_sust_months, int: count an event as such only if sustained for _ months from confirmation
         rel_infl, int: influence of last relapse (days)
         event, str: 'first', 'multiple'[default]
         baseline, str: 'fixed', 'roving'[default]
         sub_threshold, bool: if True, include confirmed sub-threshold events for roving baseline
         relapse_rebl, bool: if True, search for PIRA events again with post-relapse re-baseline
         min_value, float: only consider progressions events where the outcome is >= value
+        prog_last_visit, bool: if True, include progressions occurring at last visit (i.e. with no confirmation)
         include_dates, bool: if True, report dates of events
         include_value, bool: if True, report value of outcome at event
         verbose, int: 0[print no info], 1[print concise info], 2[default, print extended info]
@@ -49,6 +51,9 @@ def MSprog(data, subj_col, value_col, date_col,
 
     if isinstance(conf_months, int):
         conf_months = [conf_months]
+
+    if isinstance(conf_tol, int):
+        conf_tol = [conf_tol, conf_tol]
 
     if rsubj_col is None:
         rsubj_col = subj_col
@@ -71,16 +76,16 @@ def MSprog(data, subj_col, value_col, date_col,
 
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
-    results = pd.DataFrame([[''] + ([0, None, None, None, None] + [None]*len(conf_months) + [None, None])*3]*nsub,
+    results = pd.DataFrame([[''] + ([0, None, None, None, None, None] + [None]*len(conf_months) + [None, None])*3]*nsub,
                columns=['event_sequence',
-                        'improvement', 'impr_bl', 'impr_date', 'impr_value', 'time2impr'] + ['impr_conf'+str(m) for m in conf_months]
+                        'improvement', 'impr_bldate', 'impr_blvalue', 'impr_date', 'impr_value', 'time2impr'] + ['impr_conf'+str(m) for m in conf_months]
                        + ['impr_sust_days', 'impr_sust_last',
-                        'progression', 'prog_bl', 'prog_date', 'prog_value', 'time2prog'] + ['prog_conf'+str(m) for m in conf_months]
+                        'progression', 'prog_bldate', 'prog_blvalue', 'prog_date', 'prog_value', 'time2prog'] + ['prog_conf'+str(m) for m in conf_months]
                        + ['prog_sust_days', 'prog_sust_last',
-                        'PIRA', 'PIRA_bl', 'PIRA_date', 'PIRA_value', 'time2PIRA'] + ['PIRA_conf'+str(m) for m in conf_months]
+                        'PIRA', 'PIRA_bldate', 'PIRA_blvalue', 'PIRA_date', 'PIRA_value', 'time2PIRA'] + ['PIRA_conf'+str(m) for m in conf_months]
                        + ['PIRA_sust_days', 'PIRA_sust_last'])
-    results.insert(loc=10, column='prog_type', value=[None]*nsub)
-    results.insert(loc=18, column='RAW', value=[0]*nsub)
+    results.insert(loc=10+len(conf_months), column='prog_type', value=[None]*nsub)
+    results.insert(loc=18+2*len(conf_months), column='RAW', value=[0]*nsub)
 
     results.index = all_subj
 
@@ -91,7 +96,7 @@ def MSprog(data, subj_col, value_col, date_col,
         nvisits = len(data_id)
         first_visit = data_id[date_col].min()
         relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].reset_index(drop=True)
-        relapse_id = relapse_id.loc[relapse_id[rdate_col]>=first_visit+datetime.timedelta(days=rel_infl),:] # ignore relapses occurring before first visit
+        relapse_id = relapse_id.loc[relapse_id[rdate_col]>=first_visit-datetime.timedelta(days=rel_infl),:] # ignore relapses occurring before first visit
         relapse_dates = relapse_id[rdate_col].values
         nrel = len(relapse_dates)
 
@@ -111,14 +116,14 @@ def MSprog(data, subj_col, value_col, date_col,
         data_id['closest_rel+'] = float('inf') if all(distp.isna()) else distp.min(axis=1)
 
 
-        if verbose > 0:
-            print('\nSubject #%d: %d visit%s, %d relapse%s'
+        if verbose == 2:
+            print('\nSubject #%s: %d visit%s, %d relapse%s'
               %(subjid,nvisits,'' if nvisits==1 else 's',nrel,'' if nrel==1 else 's'))
 
         # if event == 'multiple':
-        impr_bl, impr_date, impr_value, time2impr, impr_conf, impr_sustd, impr_sustl = [], [], [], [], {m : [] for m in conf_months}, [], []
-        prog_bl, prog_date, prog_value, time2prog, prog_conf, prog_sustd, prog_sustl = [], [], [], [], {m : [] for m in conf_months}, [], []
-        pira_bl, pira_date, pira_value, time2pira, pira_conf, pira_sustd, pira_sustl = [], [], [], [], {m : [] for m in conf_months}, [], []
+        impr_bldate, impr_blvalue, impr_date, impr_value, time2impr, impr_conf, impr_sustd, impr_sustl = [], [], [], [], [], {m : [] for m in conf_months}, [], []
+        prog_bldate, prog_blvalue, prog_date, prog_value, time2prog, prog_conf, prog_sustd, prog_sustl = [], [], [], [], [], {m : [] for m in conf_months}, [], []
+        PIRA_bldate, PIRA_blvalue, pira_date, pira_value, time2pira, pira_conf, pira_sustd, pira_sustl = [], [], [], [], [], {m : [] for m in conf_months}, [], []
         prog_type, event_sequence, event_index = [], [''], []
 
 
@@ -126,13 +131,27 @@ def MSprog(data, subj_col, value_col, date_col,
         proceed = 1
         phase = 0 # if post-relapse re-baseline is enabled (relapse_rebl==True),
                   # phase will become 1 when re-searching for PIRA events
-        conf_window = [(int(c*30.5) - conf_tol, float('inf')) if conf_left
-                       else (int(c*30.5) - conf_tol, int(c*30.5) + conf_tol) for c in conf_months]
+        conf_window = [(int(c*30.4) - conf_tol[0], float('inf')) if conf_left
+                       else (int(c*30.4) - conf_tol[0], int(c*30.4) + conf_tol[1]) for c in conf_months]
 
         while proceed:
 
-            # Set baseline
+            # Set baseline (skip if within relapse influence)
+            while proceed and data_id.loc[bl_idx,'closest_rel-'] <= rel_infl:
+                if verbose==2:
+                    print('Baseline (visit no.%d) is within relapse influence: moved to visit no.%d'
+                              %(bl_idx+1, bl_idx+2))
+                bl_idx += 1
+                search_idx += 1
+                if bl_idx > nvisits-2:
+                    proceed = 0
+                    if verbose == 2:
+                        print('Not enough visits left: end process')
+            if bl_idx > nvisits-2:
+                break
+
             bl = data_id.iloc[bl_idx,:]
+
 
             # Event detection
             change_idx = next((x for x in range(search_idx,nvisits)
@@ -148,11 +167,12 @@ def MSprog(data, subj_col, value_col, date_col,
                         and data_id.loc[x,'closest_rel-'] > rel_infl), # out of relapse influence
                         None) for c in conf_window]
                 conf_t = [conf_months[i] for i in range(len(conf_months)) if conf_idx[i] is not None]
-                conf_idx, ind = np.unique([ic for ic in conf_idx if ic is not None], return_index=True)
-                conf_t = [conf_t[i] for i in ind]
+                conf_idx = [ic for ic in conf_idx if ic is not None]
+                # conf_idx, ind = np.unique([ic for ic in conf_idx if ic is not None], return_index=True)
+                # conf_t = [conf_t[i] for i in ind]
                 if verbose == 2:
-                    print('%s change at %dth visit (%s); potential confirmation visits available: %sth'
-                          %(outcome.upper(), change_idx+1 ,data_id.loc[change_idx,date_col], conf_idx+1))
+                    print('%s change at visit no.%d (%s); potential confirmation visits available: %s'
+                          %(outcome.upper(), change_idx+1 ,data_id.loc[change_idx,date_col].date(), [i+1 for i in conf_idx]))
 
                 # Confirmation
                 # ============
@@ -178,33 +198,45 @@ def MSprog(data, subj_col, value_col, date_col,
                     next_nonsust = next((x for x in range(conf_idx[-1]+1,nvisits)
                     if data_id.loc[x,value_col] - bl[value_col] > - delta(bl[value_col]) # decrease not sustained
                         ), None)
-                    sust_idx = nvisits-1 if next_nonsust is None else next_nonsust-1
 
+                    valid_impr = 1
+                    if require_sust_months:
+                        valid_impr = (next_nonsust is None) or (data_id.loc[next_nonsust,date_col]
+                                    - data_id.loc[conf_idx[-1],date_col]).days > require_sust_months*30.4
+                    if valid_impr:
+                        sust_idx = nvisits-1 if next_nonsust is None else next_nonsust-1
 
-                    event_sequence.append('impr')
-                    event_index.append(change_idx)
-                    impr_bl.append(bl[date_col].date())
-                    impr_date.append(data_id.loc[change_idx,date_col].date())
-                    impr_value.append(data_id.loc[change_idx,value_col])
-                    time2impr.append((data_id.loc[change_idx,date_col] - bl[date_col]).days)
-                    for m in conf_months:
-                        impr_conf[m].append(1 if m in conf_t else 0)
-                    impr_sustd.append((data_id.loc[sust_idx,date_col] - data_id.loc[conf_idx[-1],date_col]).days)
-                    impr_sustl.append(int(sust_idx == nvisits-1)) #int(data_id.loc[nvisits-1,value_col] - bl[value_col] <= - delta(bl[value_col]))
-                    results.loc[subjid,'improvement'] += 1
+                        event_sequence.append('impr')
+                        event_index.append(change_idx)
+                        impr_bldate.append(bl[date_col].date())
+                        impr_blvalue.append(bl[value_col])
+                        impr_date.append(data_id.loc[change_idx,date_col].date())
+                        impr_value.append(data_id.loc[change_idx,value_col])
+                        time2impr.append((data_id.loc[change_idx,date_col] - bl[date_col]).days)
+                        for m in conf_months:
+                            impr_conf[m].append(1 if m in conf_t else 0)
+                        impr_sustd.append((data_id.loc[sust_idx,date_col] - data_id.loc[conf_idx[-1],date_col]).days)
+                        impr_sustl.append(int(sust_idx == nvisits-1)) #int(data_id.loc[nvisits-1,value_col] - bl[value_col] <= - delta(bl[value_col]))
+                        results.loc[subjid,'improvement'] += 1
 
-                    if baseline=='roving':
-                        bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last confirmation time
-                        search_idx = bl_idx + 1
+                        if baseline=='roving':
+                            bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last confirmation time
+                            search_idx = bl_idx + 1
+                        else:
+                            search_idx = nvisits if next_change is None else next_change #next_nonsust
+
+                        if verbose == 2:
+                            print('%s improvement (visit no.%d, %s) confirmed at %s months, sustained up to visit no.%d (%s)'
+                                  %(outcome.upper(), change_idx+1, data_id.loc[change_idx,date_col].date(),
+                                    conf_t, sust_idx+1, data_id.loc[sust_idx,date_col].date()))
+                            print('New settings: baseline at visit no.%d, searching for events from visit no.%s on'
+                                  %(bl_idx+1, '-' if search_idx>=nvisits else search_idx+1))
+
                     else:
-                        search_idx = nvisits if next_nonsust is None else next_nonsust
-
-                    if verbose == 2:
-                        print('%s improvement (%dth visit, %s) confirmed at %s months, sustained up to %dth visit (%s)'
-                              %(outcome.upper(), change_idx+1, data_id.loc[change_idx,date_col],
-                                conf_t, sust_idx+1, data_id.loc[sust_idx,date_col]))
-                        print('New settings: baseline at %dth visit, searching for events from %sth visit on'
-                              %(bl_idx+1, '-' if search_idx>=nvisits else search_idx+1))
+                        search_idx = change_idx + 1 # skip the change and look for other patterns after it
+                        if verbose == 2:
+                            print('Change confirmed but not sustained for >=%d months: proceed with search'
+                                  %require_sust_months)
 
                 # Confirmed sub-threshold improvement: RE-BASELINE
                 # ------------------------------------------------
@@ -219,20 +251,23 @@ def MSprog(data, subj_col, value_col, date_col,
                     bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last consecutive decreased value
                     search_idx = next_change
                     if verbose == 2:
-                        print('Confirmed sub-threshold %s improvement (%dth visit)'
+                        print('Confirmed sub-threshold %s improvement (visit no.%d)'
                               %(outcome.upper(), change_idx+1))
-                        print('New settings: baseline at %dth visit, searching for events from %sth visit on'
-                              %(bl_idx+1, '' if search_idx is None else search_idx+1))
+                        print('New settings: baseline at visit no.%d, searching for events from visit no.%s on'
+                              %(bl_idx+1, '-' if search_idx is None else search_idx+1))
 
                 # CONFIRMED PROGRESSION:
                 # ---------------------
-                elif (len(conf_idx) > 0 # confirmation visits available
-                        and data_id.loc[change_idx,value_col] >= min_value
+                elif (data_id.loc[change_idx,value_col] >= min_value
                         and data_id.loc[change_idx,value_col] - bl[value_col] >= delta(bl[value_col]) # value increased (>delta) from baseline
+                    and ((len(conf_idx) > 0 # confirmation visits available
                         and all([data_id.loc[x,value_col] - bl[value_col] >= delta(bl[value_col])
                                  for x in range(change_idx+1,conf_idx[0]+1)]) # increase is confirmed at first valid date
                         and all([data_id.loc[x,value_col] >= min_value for x in range(change_idx+1,conf_idx[0]+1)]) # confirmation above min_value too
-                        ):
+                        ) or (prog_last_visit and change_idx==nvisits-1))
+                      ):
+                    if change_idx==nvisits-1:
+                        conf_idx = [nvisits-1]
                     next_change = next((x for x in range(conf_idx[0]+1,nvisits)
                         if data_id.loc[x,value_col] - bl[value_col] < delta(bl[value_col])), None)
                     conf_idx = conf_idx if next_change is None else [ic for ic in conf_idx if ic<next_change] # confirmed dates
@@ -246,62 +281,74 @@ def MSprog(data, subj_col, value_col, date_col,
                     next_nonsust = next((x for x in range(conf_idx[-1]+1,nvisits)
                         if data_id.loc[x,value_col] - bl[value_col] < delta(bl[value_col]) # increase not sustained
                                     ), None)
-                    sust_idx = nvisits-1 if next_nonsust is None else next_nonsust-1
+                    valid_prog = 1
+                    if require_sust_months:
+                        valid_prog = (next_nonsust is None) or (data_id.loc[next_nonsust,date_col]
+                                    - data_id.loc[conf_idx[-1],date_col]).days > require_sust_months*30.4
+                    if valid_prog:
+                        sust_idx = nvisits-1 if next_nonsust is None else next_nonsust-1
 
-                    if phase == 0 and data_id.loc[change_idx,'closest_rel-'] <= rel_infl: # event occurs within relapse influence
-                        prog_type.append('RAW')
-                        event_sequence.append('RAW')
-                        event_index.append(change_idx)
-                        results.loc[subjid,'RAW'] += 1
-                    elif data_id.loc[change_idx,'closest_rel-'] > rel_infl: # event occurs out of relapse influence
-                        rel_inbetween = [any(is_rel[date_dict[bl_idx]:date_dict[ic]+1]) for ic in conf_idx]
-                        pconf_idx = conf_idx if not any(rel_inbetween) else conf_idx[:next(i for i in range(len(conf_idx))
-                                                                                          if rel_inbetween[i])]
-                        if len(pconf_idx)>0 and data_id.loc[pconf_idx[-1],'closest_rel+']<=rel_infl:
-                            pconf_idx = pconf_idx[:-1]
-                        pconf_t = conf_t[:len(pconf_idx)]
-                        if len(pconf_idx)>0:
-                            prog_type.append('PIRA')
-                            pira_bl.append(bl[date_col].date())
-                            pira_date.append(data_id.loc[change_idx,date_col].date())
-                            pira_value.append(data_id.loc[change_idx,value_col])
-                            time2pira.append((data_id.loc[change_idx,date_col] - bl[date_col]).days)
+                        if phase == 0 and data_id.loc[change_idx,'closest_rel-'] <= rel_infl: # event occurs within relapse influence
+                            prog_type.append('RAW')
+                            event_sequence.append('RAW')
+                            event_index.append(change_idx)
+                            results.loc[subjid,'RAW'] += 1
+                        elif data_id.loc[change_idx,'closest_rel-'] > rel_infl: # event occurs out of relapse influence
+                            rel_inbetween = [any(is_rel[date_dict[bl_idx]:date_dict[ic]+1]) for ic in conf_idx]
+                            pconf_idx = conf_idx if not any(rel_inbetween) else conf_idx[:next(i for i in range(len(conf_idx))
+                                                                                              if rel_inbetween[i])]
+                            if len(pconf_idx)>0 and data_id.loc[pconf_idx[-1],'closest_rel+']<=rel_infl:
+                                pconf_idx = pconf_idx[:-1]
+                            pconf_t = conf_t[:len(pconf_idx)]
+                            if len(pconf_idx)>0:
+                                prog_type.append('PIRA')
+                                PIRA_bldate.append(bl[date_col].date())
+                                PIRA_blvalue.append(bl[value_col])
+                                pira_date.append(data_id.loc[change_idx,date_col].date())
+                                pira_value.append(data_id.loc[change_idx,value_col])
+                                time2pira.append((data_id.loc[change_idx,date_col] - bl[date_col]).days)
+                                for m in conf_months:
+                                    pira_conf[m].append(1 if m in pconf_t else 0)
+                                pira_sustd.append((data_id.loc[sust_idx,date_col] - data_id.loc[pconf_idx[-1],date_col]).days)
+                                pira_sustl.append(int(sust_idx == nvisits-1))
+                                results.loc[subjid,'PIRA'] += 1
+                                event_sequence.append('PIRA')
+                                event_index.append(change_idx)
+                            elif phase == 0:
+                                event_sequence.append('prog')
+                                event_index.append(change_idx)
+                                prog_type.append('-')
+
+                        if event_sequence[-1] == 'PIRA' or phase == 0:
+                            prog_bldate.append(bl[date_col].date())
+                            prog_blvalue.append(bl[value_col])
+                            prog_date.append(data_id.loc[change_idx,date_col].date())
+                            prog_value.append(data_id.loc[change_idx,value_col])
+                            time2prog.append((data_id.loc[change_idx,date_col] - bl[date_col]).days)
                             for m in conf_months:
-                                pira_conf[m].append(1 if m in pconf_t else 0)
-                            pira_sustd.append((data_id.loc[sust_idx,date_col] - data_id.loc[pconf_idx[-1],date_col]).days)
-                            pira_sustl.append(int(sust_idx == nvisits-1))
-                            results.loc[subjid,'PIRA'] += 1
-                            event_sequence.append('PIRA')
-                            event_index.append(change_idx)
-                        elif phase == 0:
-                            event_sequence.append('prog')
-                            event_index.append(change_idx)
-                            prog_type.append('-')
-
-                    if event_sequence[-1] == 'PIRA' or phase == 0:
-                        prog_bl.append(bl[date_col].date())
-                        prog_date.append(data_id.loc[change_idx,date_col].date())
-                        prog_value.append(data_id.loc[change_idx,value_col])
-                        time2prog.append((data_id.loc[change_idx,date_col] - bl[date_col]).days)
-                        for m in conf_months:
-                            prog_conf[m].append(1 if m in conf_t else 0)
-                        prog_sustd.append((data_id.loc[sust_idx,date_col] - data_id.loc[conf_idx[-1],date_col]).days)
-                        prog_sustl.append(int(sust_idx == nvisits-1))
-                        results.loc[subjid,'progression'] += 1
-                        if verbose == 2:
-                            print('%s progression[%s] (%dth visit, %s) confirmed at %s months, sustained up to %dth visit (%s)'
-                                  %(outcome.upper(), event_sequence[-1], change_idx+1, data_id.loc[change_idx,date_col],
-                                    conf_t, sust_idx+1, data_id.loc[sust_idx,date_col]))
+                                prog_conf[m].append(1 if m in conf_t else 0)
+                            prog_sustd.append((data_id.loc[sust_idx,date_col] - data_id.loc[conf_idx[-1],date_col]).days)
+                            prog_sustl.append(int(sust_idx == nvisits-1))
+                            results.loc[subjid,'progression'] += 1
+                            if verbose == 2:
+                                print('%s progression[%s] (visit no.%d, %s) confirmed at %s months, sustained up to visit no.%d (%s)'
+                                      %(outcome.upper(), event_sequence[-1], change_idx+1, data_id.loc[change_idx,date_col].date(),
+                                        conf_t, sust_idx+1, data_id.loc[sust_idx,date_col].date()))
 
 
-                    if baseline=='roving' or (event_sequence[-1]=='PIRA' and phase==1):
-                        bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last confirmation time
-                        search_idx = bl_idx + 1
+                        if baseline=='roving' or (event_sequence[-1]=='PIRA' and phase==1):
+                            bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last confirmation time
+                            search_idx = bl_idx + 1
+                        else:
+                            search_idx = nvisits if next_change is None else next_change #next_nonsust
+                        if verbose == 2 and phase == 0:
+                            print('New settings: baseline at visit no.%d, searching for events from visit no.%s on'
+                                  %(bl_idx+1, '-' if search_idx>=nvisits else search_idx+1))
                     else:
-                        search_idx = nvisits if next_nonsust is None else next_nonsust
-                    if verbose == 2 and phase == 0:
-                        print('New settings: baseline at %dth visit, searching for events from %sth visit on'
-                              %(bl_idx+1, '-' if search_idx>=nvisits else search_idx+1))
+                        search_idx = change_idx + 1 # skip the change and look for other patterns after it
+                        if verbose == 2:
+                            print('Change confirmed but not sustained for >=%d months: proceed with search'
+                                  %require_sust_months)
 
                 # Confirmed sub-threshold progression: RE-BASELINE
                 # ------------------------------------------------
@@ -316,9 +363,9 @@ def MSprog(data, subj_col, value_col, date_col,
                     bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last consecutive increased value
                     search_idx = bl_idx + 1
                     if verbose == 2:
-                        print('Confirmed sub-threshold %s progression (%dth visit)'
+                        print('Confirmed sub-threshold %s progression (visit no.%d)'
                               %(outcome.upper(), change_idx+1))
-                        print('New settings: baseline at %dth visit, searching for events from %dth visit on'
+                        print('New settings: baseline at visit no.%d, searching for events from visit no.%d on'
                               %(bl_idx+1, search_idx+1))
 
                 # NO confirmation:
@@ -348,7 +395,7 @@ def MSprog(data, subj_col, value_col, date_col,
                         print('%s improvement, (progression, )and PIRA events already found: end process'
                               %outcome.upper())
 
-            if proceed and search_idx <= nvisits-2 and relapse_rebl and phase == 1:
+            if proceed and search_idx <= nvisits-1 and relapse_rebl and phase == 1:
                 bl_idx = next((x for x in range(bl_idx+1,nvisits) # visits after current baseline (or after last confirmed PIRA)
                             if any(is_rel[date_dict[bl_idx]:date_dict[x]+1]) # after a relapse
                             and data_id.loc[x,'closest_rel-']>rel_infl), # out of relapse influence
@@ -357,10 +404,10 @@ def MSprog(data, subj_col, value_col, date_col,
                 if bl_idx is not None:
                     search_idx = bl_idx + 1
                     if verbose == 2:
-                        print('New settings: baseline at %dth visit, searching for events from %dth visit on'
+                        print('New settings: baseline at visit no.%d, searching for events from visit no.%d on'
                               %(bl_idx+1, search_idx+1))
 
-            if proceed and (bl_idx is None or bl_idx > nvisits-3):
+            if proceed and (bl_idx is None or bl_idx > nvisits-2):
                 proceed = 0
                 if verbose == 2:
                     print('Not enough visits after current baseline: end process')
@@ -372,7 +419,8 @@ def MSprog(data, subj_col, value_col, date_col,
         prog_index = [event_index[i] for i in range(len(event_sequence)) if event_sequence[i] in ('PIRA', 'RAW', 'prog')]
         prog_order = np.argsort(prog_index)
         if event == 'multiple':
-            results.at[subjid,'impr_bl'] = None if impr_bl==[] else impr_bl
+            results.at[subjid,'impr_bldate'] = None if impr_bldate==[] else impr_bldate
+            results.at[subjid,'impr_blvalue'] = None if impr_blvalue==[] else impr_blvalue
             results.at[subjid,'impr_date'] = None if impr_date==[] else impr_date
             results.at[subjid,'impr_value'] = None if impr_value==[] else impr_value
             results.at[subjid,'time2impr'] = None if time2impr==[] else time2impr
@@ -380,7 +428,8 @@ def MSprog(data, subj_col, value_col, date_col,
                 results.at[subjid,'impr_conf'+str(m)] = None if impr_conf[m]==[] else impr_conf[m]
             results.at[subjid,'impr_sust_days'] = None if impr_sustd==[] else impr_sustd
             results.at[subjid,'impr_sust_last'] = None if impr_sustl==[] else impr_sustl
-            results.at[subjid,'prog_bl'] = None if prog_bl==[] else [prog_bl[i] for i in prog_order]
+            results.at[subjid,'prog_bldate'] = None if prog_bldate==[] else [prog_bldate[i] for i in prog_order]
+            results.at[subjid,'prog_blvalue'] = None if prog_blvalue==[] else [prog_blvalue[i] for i in prog_order]
             results.at[subjid,'prog_date'] = None if prog_date==[] else [prog_date[i] for i in prog_order]
             results.at[subjid,'prog_value'] = None if prog_value==[] else [prog_value[i] for i in prog_order]
             results.at[subjid,'time2prog'] = None if time2prog==[] else [time2prog[i] for i in prog_order]
@@ -389,7 +438,8 @@ def MSprog(data, subj_col, value_col, date_col,
             results.at[subjid,'prog_sust_days'] = None if prog_sustd==[] else [prog_sustd[i] for i in prog_order]
             results.at[subjid,'prog_sust_last'] = None if prog_sustl==[] else [prog_sustl[i] for i in prog_order]
             results.at[subjid,'prog_type'] = None if prog_type==[] else [prog_type[i] for i in prog_order]
-            results.at[subjid,'PIRA_bl'] = None if pira_bl==[] else pira_bl
+            results.at[subjid,'PIRA_bldate'] = None if PIRA_bldate==[] else PIRA_bldate
+            results.at[subjid,'PIRA_blvalue'] = None if PIRA_blvalue==[] else PIRA_blvalue
             results.at[subjid,'PIRA_date'] = None if pira_date==[] else pira_date
             results.at[subjid,'PIRA_value'] = None if pira_value==[] else pira_value
             results.at[subjid,'time2PIRA'] = None if time2pira==[] else time2pira
@@ -402,7 +452,8 @@ def MSprog(data, subj_col, value_col, date_col,
             results.at[subjid,'progression'] = int(results.at[subjid,'progression']>0)
             results.at[subjid,'PIRA'] = int(results.at[subjid,'PIRA']>0)
             results.at[subjid,'RAW'] = int(results.at[subjid,'RAW']>0)
-            results.at[subjid,'impr_bl'] = None if impr_bl==[] else impr_bl[0]
+            results.at[subjid,'impr_bldate'] = None if impr_bldate==[] else impr_bldate[0]
+            results.at[subjid,'impr_blvalue'] = None if impr_blvalue==[] else impr_blvalue[0]
             results.at[subjid,'impr_date'] = None if impr_date==[] else impr_date[0]
             results.at[subjid,'impr_value'] = None if impr_value==[] else impr_value[0]
             results.at[subjid,'time2impr'] = None if time2impr==[] else time2impr[0]
@@ -411,8 +462,9 @@ def MSprog(data, subj_col, value_col, date_col,
             results.at[subjid,'impr_sust_days'] = None if impr_sustd==[] else impr_sustd[0]
             results.at[subjid,'impr_sust_last'] = None if impr_sustl==[] else impr_sustl[0]
             first_pira = next((x for x in range(len(prog_type)) if prog_type[x]=='PIRA'), None)
-            i_tmp = 0 if first_pira is None else first_pira
-            results.at[subjid,'prog_bl'] = None if prog_bl==[] else prog_bl[i_tmp]
+            i_tmp = 0 #if first_pira is None else first_pira
+            results.at[subjid,'prog_bldate'] = None if prog_bldate==[] else prog_bldate[i_tmp]
+            results.at[subjid,'prog_blvalue'] = None if prog_blvalue==[] else prog_blvalue[i_tmp]
             results.at[subjid,'prog_date'] = None if prog_date==[] else prog_date[i_tmp]
             results.at[subjid,'prog_value'] = None if prog_value==[] else prog_value[i_tmp]
             results.at[subjid,'time2prog'] = None if time2prog==[] else time2prog[i_tmp]
@@ -421,7 +473,8 @@ def MSprog(data, subj_col, value_col, date_col,
             results.at[subjid,'prog_sust_days'] = None if prog_sustd==[] else prog_sustd[i_tmp]
             results.at[subjid,'prog_sust_last'] = None if prog_sustl==[] else prog_sustl[i_tmp]
             results.at[subjid,'prog_type'] = None if prog_type==[] else prog_type[i_tmp]
-            results.at[subjid,'PIRA_bl'] = None if pira_bl==[] else pira_bl[0]
+            results.at[subjid,'PIRA_bldate'] = None if PIRA_bldate==[] else PIRA_bldate[0]
+            results.at[subjid,'PIRA_blvalue'] = None if PIRA_blvalue==[] else PIRA_blvalue[0]
             results.at[subjid,'PIRA_date'] = None if pira_date==[] else pira_date[0]
             results.at[subjid,'PIRA_value'] = None if pira_value==[] else pira_value[0]
             results.at[subjid,'time2PIRA'] = None if time2pira==[] else time2pira[0]
@@ -432,26 +485,29 @@ def MSprog(data, subj_col, value_col, date_col,
             impr_idx = next((x for x in range(len(event_sequence)) if event_sequence[x]=='impr'), None)
             prog_idx = next((x for x in range(len(event_sequence)) if event_sequence[x] in ('RAW', 'prog')), None)
             pira_idx = next((x for x in range(len(event_sequence)) if event_sequence[x]=='PIRA'), None)
-            first_events = [impr_idx, prog_idx] if pira_idx is None else [impr_idx, pira_idx]
-            first_events = [ii for ii in first_events if ii is not None]
-            first_events.sort()
+            first_events = [impr_idx, prog_idx, pira_idx] #[impr_idx, prog_idx] if pira_idx is None else [impr_idx, pira_idx] #
+            first_events = np.unique([ii for ii in first_events if ii is not None]) # np.unique() returns the values already sorted
+            # first_events.sort()
             event_sequence = [event_sequence[ii] for ii in first_events]
         results.at[subjid,'event_sequence'] = ', '.join(event_sequence)
 
-        if verbose > 0:
+        if verbose == 2:
             print('Event sequence: %s'
               %(results.loc[subjid,'event_sequence'] if results.loc[subjid,'event_sequence']!='' else '-'))
 
     if verbose>=1:
-        print('\n---\nOutcome: %s\nConfirmation at: %s%s mm (+-%ddd)\nBaseline: %s%s%s\nEvents detected: %s of each kind'
-          %(outcome.upper(), 'AT LEAST ' if conf_left else '', conf_months, conf_tol,
+        print('\n---\nOutcome: %s\nConfirmation at: %smm (-%ddd, +%s)\nBaseline: %s%s%s\nRelapse influence: %ddd\nEvents detected: %s of each kind'
+          %(outcome.upper(), conf_months, conf_tol[0], 'inf' if conf_left else conf_tol[1],
             baseline, ' (sub-threshold)' if sub_threshold else '',
-            ' + post-relapse re-baseline' if relapse_rebl else '', event))
-        print('---\nTotal subjects: %d\nImprovement: %d\nProgression: %d (PIRA: %d; RAW: %d)'
+            ' (and post-relapse re-baseline)' if relapse_rebl else '', rel_infl, event))
+        print('---\nTotal subjects: %d\nImproved: %d\nProgressed: %d (PIRA: %d; RAW: %d)'
               %(nsub, (results['improvement']>0).sum(), (results['progression']>0).sum(),
                 (results['PIRA']>0).sum(), (results['RAW']>0).sum()))
+        print('---\nImprovement events: %d\nProgression events: %d (PIRA: %d; RAW: %d)'
+              %(results['improvement'].sum(), results['progression'].sum(),
+                results['PIRA'].sum(), results['RAW'].sum()))
         if min_value > 0:
-            print('---\n*** WARNING only progressions to EDSS>=%d ***' %min_value)
+            print('---\n*** WARNING only progressions to EDSS>=%d are considered ***' %min_value)
 
     columns = results.columns
     if not include_dates:
@@ -461,9 +517,6 @@ def MSprog(data, subj_col, value_col, date_col,
     results = results[columns]
 
     return results
-
-
-
 
 
 #####################################################################################
@@ -480,7 +533,7 @@ def col_to_date(column, format=None, remove_na=False):
     vtype = np.vectorize(lambda x: type(x))
 
     column_all = column.copy()
-    naidx = [] if remove_na else column.isna()
+    naidx = pd.Series([False]*len(column), index=column.index) if remove_na else column.isna()
     column.dropna(inplace=True)
 
     if all([d is pd.Timestamp for d in vtype(column)]):
@@ -493,6 +546,7 @@ def col_to_date(column, format=None, remove_na=False):
         dates = column
 
     column_all.loc[~naidx] = dates
+
     return column_all
 
 
@@ -509,7 +563,8 @@ def age_column(date, dob, col_name='Age', remove_na=False):
     Returns:
      difference in days.
     """
-    date, dob = col_to_date(date, remove_na=remove_na), col_to_date(dob, remove_na=remove_na)
+    date = col_to_date(date, remove_na=remove_na)
+    dob = col_to_date(dob, remove_na=remove_na)
 
     diff = pd.Series(np.nan, index=date.index, name=col_name)
 
@@ -519,14 +574,6 @@ def age_column(date, dob, col_name='Age', remove_na=False):
     dob.loc[(dob.apply(lambda x: x.day)==29)
             & (dob.apply(lambda x: x.month)==2)] = dob.loc[(dob.apply(lambda x: x.day)==29)
             & (dob.apply(lambda x: x.month)==2)].apply(lambda dt: dt.replace(day=28))
-
-    # bd = []
-    # for x in date.index:
-    #     try:
-    #         bd.append(datetime.date(date[x].year, dob[x].month, dob[x].day))
-    #     except ValueError:
-    #         bd.append(datetime.date(date[x].year, dob[x].month, dob[x].day-1))
-    # this_year_birthday = pd.Series(bd, index=date.index)
 
     this_year_birthday = pd.to_datetime(dict(year=date.apply(lambda x: x.year),
                                              day=dob.apply(lambda x: x.day),
