@@ -15,7 +15,7 @@ import datetime
 
 def MSprog(data, subj_col, value_col, date_col, subjects=None,
            relapse=None, rsubj_col=None, rdate_col=None, outcome='edss', delta_fun=None,
-           conf_months=3, conf_tol=30, conf_left=False, require_sust_months=0, rel_infl=30,
+           conf_months=3, conf_tol_days=30, conf_left=False, require_sust_months=0, rel_infl=30,
            event='multiple', baseline='roving', sub_threshold=False, relapse_rebl=False,
            min_value=0, prog_last_visit=False, include_dates=False, include_value=False, verbose=2):
     """
@@ -31,8 +31,8 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
         outcome, str: 'edss'[default],'nhpt','t25fw','sdmt'
         delta_fun, function: (optional) Custom function specifying the minimum delta corresponding to a valid change from baseline.
         conf_months, int or list-like : period before confirmation (months)
-        conf_tol, int or list-like of length 1 or 2: tolerance window for confirmation visit (days): [t(months)-conf_tol[0](days), t(months)+conf_tol[0](days)]
-        conf_left, bool: if True, confirmation window is [t(months)-conf_tol(days), inf)
+        conf_tol_days, int or list-like of length 1 or 2: tolerance window for confirmation visit (days): [t(months)-conf_tol_days[0](days), t(months)+conf_tol_days[0](days)]
+        conf_left, bool: if True, confirmation window is [t(months)-conf_tol_days, inf)
         require_sust_months, int: count an event as such only if sustained for _ months from confirmation
         rel_infl, int: influence of last relapse (days)
         event, str: 'first' [only the very first event - improvement or progression]
@@ -60,22 +60,22 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
     if isinstance(conf_months, int):
         conf_months = [conf_months]
 
-    if isinstance(conf_tol, int):
-        conf_tol = [conf_tol, conf_tol]
+    if isinstance(conf_tol_days, int):
+        conf_tol_days = [conf_tol_days, conf_tol_days]
 
     if rsubj_col is None:
         rsubj_col = subj_col
     if rdate_col is None:
         rdate_col = date_col
 
-    # Remove missing values
-    data = data.dropna()
+    # Remove missing values from columns of interest
+    data = data.copy()[[subj_col, value_col, date_col]].dropna()
     # Convert dates to datetime format
     data[date_col] = col_to_date(data[date_col])
     if relapse is None:
         relapse_rebl = False
     else:
-        relapse = relapse.dropna()
+        relapse = relapse.copy()[[rsubj_col, rdate_col]].dropna()
         relapse[rdate_col] = col_to_date(relapse[rdate_col])
 
     if relapse is None:
@@ -108,7 +108,7 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
 
     for subjid in all_subj:
 
-        data_id = data.loc[data[subj_col]==subjid,:]
+        data_id = data.loc[data[subj_col]==subjid,:].copy()
 
         udates, ucounts = np.unique(data_id[date_col].values, return_counts=True)
         if any(ucounts>1):
@@ -118,7 +118,7 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
 
         nvisits = len(data_id)
         first_visit = data_id[date_col].min()
-        relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].reset_index(drop=True)
+        relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].copy().reset_index(drop=True)
         relapse_id = relapse_id.loc[relapse_id[rdate_col]>=first_visit-datetime.timedelta(days=rel_infl),:] # ignore relapses occurring before first visit
         relapse_dates = relapse_id[rdate_col].values
         nrel = len(relapse_dates)
@@ -154,8 +154,8 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
         proceed = 1
         phase = 0 # if post-relapse re-baseline is enabled (relapse_rebl==True),
                   # phase will become 1 when re-searching for PIRA events
-        conf_window = [(int(c*30.44) - conf_tol[0], float('inf')) if conf_left
-                       else (int(c*30.44) - conf_tol[0], int(c*30.44) + conf_tol[1]) for c in conf_months]
+        conf_window = [(int(c*30.44) - conf_tol_days[0], float('inf')) if conf_left
+                       else (int(c*30.44) - conf_tol_days[0], int(c*30.44) + conf_tol_days[1]) for c in conf_months]
 
         while proceed:
 
@@ -497,7 +497,7 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
 
     if verbose>=1:
         print('\n---\nOutcome: %s\nConfirmation at: %smm (-%ddd, +%s)\nBaseline: %s%s%s\nRelapse influence: %ddd\nEvents detected: %s'
-          %(outcome.upper(), conf_months, conf_tol[0], 'inf' if conf_left else str(conf_tol[1])+'dd',
+          %(outcome.upper(), conf_months, conf_tol_days[0], 'inf' if conf_left else str(conf_tol_days[1])+'dd',
             baseline, ' (sub-threshold)' if sub_threshold else '',
             ' (and post-relapse re-baseline)' if relapse_rebl else '', rel_infl, event))
         print('---\nTotal subjects: %d\n---\nProgressed: %d (PIRA: %d; RAW: %d)'
@@ -657,7 +657,7 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
     results = pd.DataFrame([[None, None]]*nsub, columns=[date_col, value_col], index=all_subj)
 
     for subjid in all_subj:
-        data_id = data.loc[data[subj_col]==subjid,:]
+        data_id = data.loc[data[subj_col]==subjid,:].copy()
 
         udates, ucounts = np.unique(data_id[date_col].values, return_counts=True)
         if any(ucounts>1):
@@ -795,7 +795,7 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
         raw_events = []
 
     for subjid in all_subj:
-        data_id = data_sep.loc[data_sep[subj_col]==subjid,:].reset_index(drop=True)
+        data_id = data_sep.loc[data_sep[subj_col]==subjid,:].copy().reset_index(drop=True)
         nvisits = len(data_id)
 
         relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].reset_index(drop=True)
