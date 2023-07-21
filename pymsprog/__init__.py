@@ -11,13 +11,15 @@ import pandas as pd
 
 import datetime
 
+#import warnings
+
 #####################################################################################
 
 def MSprog(data, subj_col, value_col, date_col, subjects=None,
            relapse=None, rsubj_col=None, rdate_col=None, outcome='edss', delta_fun=None,
            conf_months=3, conf_tol_days=30, conf_left=False, require_sust_months=0, rel_infl=30,
-           event='multiple', baseline='roving', sub_threshold=False, relapse_rebl=False,
-           min_value=0, prog_last_visit=False, include_dates=False, include_value=False, verbose=2):
+           event='firstprog', baseline='fixed', sub_threshold=False, relapse_rebl=False,
+           min_value=0, prog_last_visit=False, include_dates=False, include_value=False, verbose=1):
     """
     Compute MS progression from longitudinal data.
     ARGUMENTS:
@@ -69,18 +71,15 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
         rdate_col = date_col
 
     # Remove missing values from columns of interest
-    data = data.copy()[[subj_col, value_col, date_col]].dropna()
+    data = data[[subj_col, value_col, date_col]].dropna()
     # Convert dates to datetime format
     data[date_col] = col_to_date(data[date_col])
     if relapse is None:
         relapse_rebl = False
-    else:
-        relapse = relapse.copy()[[rsubj_col, rdate_col]].dropna()
-        relapse[rdate_col] = col_to_date(relapse[rdate_col])
-
-    if relapse is None:
-        relapse_rebl = False
         relapse = pd.DataFrame([], columns=[rsubj_col, rdate_col])
+    else:
+        relapse = relapse[[rsubj_col, rdate_col]].dropna()
+        relapse[rdate_col] = col_to_date(relapse[rdate_col])
 
     if subjects is not None:
         data = data[data[subj_col].isin(subjects)]
@@ -110,9 +109,15 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
 
         data_id = data.loc[data[subj_col]==subjid,:].copy()
 
+        # If more than one visit occur on the same day, only keep last
         udates, ucounts = np.unique(data_id[date_col].values, return_counts=True)
         if any(ucounts>1):
             data_id = data_id.groupby(date_col).last()
+
+        # Sort visits in chronological order
+        sorted_tmp = data_id.sort_values(by=[date_col])
+        if any(sorted_tmp.index != data_id.index):
+            data_id = sorted_tmp.copy()
 
         data_id.reset_index(inplace=True, drop=True)
 
@@ -123,11 +128,15 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
         relapse_dates = relapse_id[rdate_col].values
         nrel = len(relapse_dates)
 
+
         if verbose == 2:
             print('\nSubject #%s: %d visit%s, %d relapse%s'
               %(subjid, nvisits,'' if nvisits==1 else 's', nrel, '' if nrel==1 else 's'))
             if any(ucounts>1):
-                print('Found multiple visits in the same day: only keeping last')
+                print('Found multiple visits on the same day: only keeping last.')
+            if any(sorted_tmp.index != data_id.index):
+                print('Visits not listed in chronological order: sorting them.')
+
 
         all_dates, sorted_ind = np.unique(list(data_id[date_col].values) + list(relapse_dates), #np.concatenate([data_id[date_col].values, relapse_dates]),
                               return_index=True) # numpy unique() returns sorted values
@@ -170,8 +179,14 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
                     proceed = 0
                     if verbose == 2:
                         print('Not enough visits left: end process')
-            if bl_idx > nvisits-2:
-                break
+
+            # if bl_idx > nvisits - 2:
+            #     break
+            if bl_idx > nvisits - 1:
+                bl_idx = nvisits - 1
+                proceed = 0
+                if verbose == 2:
+                    print('Not enough visits left: end process')
 
             bl = data_id.iloc[bl_idx,:]
 
@@ -351,7 +366,7 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
                                         conf_t, sust_idx+1, data_id.loc[sust_idx,date_col].date()))
 
 
-                        if baseline=='roving' or (event_type[-1]=='PIRA' and phase==1):
+                        if (baseline=='roving' and phase==0): #or (event_type[-1]=='PIRA' and phase==1): #
                             bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last confirmation time
                             search_idx = bl_idx + 1
                         else:
@@ -393,7 +408,8 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
             if relapse_rebl and phase==0 and not proceed: # and 'PIRA' not in event_type:
                 phase = 1
                 proceed = 1
-                search_idx = bl_idx + 1
+                bl_idx = 0
+                search_idx = 1 #bl_idx + 1 #
                 if verbose == 2:
                     print('Completed search with fixed baseline, re-search for PIRA events with post-relapse rebaseline')
 
@@ -407,7 +423,8 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
                     if verbose == 2:
                         print('First events already found: end process')
 
-            if proceed and search_idx <= nvisits-1 and relapse_rebl and phase == 1:
+            if (proceed and search_idx <= nvisits-1 and relapse_rebl and phase == 1
+                    and any(is_rel[date_dict[bl_idx]:date_dict[search_idx]+1])):
                 bl_idx = next((x for x in range(bl_idx+1,nvisits) # visits after current baseline (or after last confirmed PIRA)
                             if any(is_rel[date_dict[bl_idx]:date_dict[x]+1]) # after a relapse
                             and data_id.loc[x,'closest_rel-'] > rel_infl), # out of relapse influence
@@ -419,10 +436,10 @@ def MSprog(data, subj_col, value_col, date_col, subjects=None,
                         print('New settings: baseline at visit no.%d, searching for events from visit no.%d on'
                               %(bl_idx+1, search_idx+1))
 
-            if proceed and (bl_idx is None or bl_idx > nvisits-2):
-                proceed = 0
-                if verbose == 2:
-                    print('Not enough visits after current baseline: end process')
+                if proceed and (bl_idx is None or bl_idx > nvisits-2):
+                    proceed = 0
+                    if verbose == 2:
+                        print('Not enough visits after current baseline: end process')
 
 
         subj_index = results[results[subj_col]==subjid].index
