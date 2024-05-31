@@ -149,14 +149,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
     data = data[[subj_col, value_col, date_col, validconf_col]].copy().dropna()  #_c_#
 
     # Convert dates to datetime.date format
-    data[date_col] = col_to_date(data[date_col])
+    data[date_col] = pd.to_datetime(data[date_col]) #col_to_date(data[date_col]) #
     if relapse is None:
         relapse_rebl = False
         relapse = pd.DataFrame([], columns=[rsubj_col, rdate_col])
         relapse_start = data[date_col].min()
     else:
         relapse = relapse[[rsubj_col, rdate_col]].copy().dropna()
-        relapse[rdate_col] = col_to_date(relapse[rdate_col])
+        relapse[rdate_col] = pd.to_datetime(relapse[rdate_col]) #col_to_date(relapse[rdate_col]) #
         relapse_start = relapse[rdate_col].min()
 
     # Convert dates to days from minimum #_d_#
@@ -862,8 +862,11 @@ def age_column(date, dob, col_name='Age', remove_na=False):
     Returns:
      difference in days.
     """
-    date = col_to_date(date)
-    dob = col_to_date(dob)
+    #date = col_to_date(date)
+    #dob = col_to_date(dob)
+    date = pd.to_datetime(date)
+    dob = pd.to_datetime(dob)
+
 
     if not remove_na:
         diff = pd.Series(np.nan, index=date.index, name=col_name)
@@ -1008,13 +1011,13 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
     data = data[[subj_col, value_col, date_col]].dropna()
 
     # Convert dates to datetime.date format
-    data[date_col] = col_to_date(data[date_col])
+    data[date_col] = pd.to_datetime(data[date_col]) #col_to_date(data[date_col]) #
     if relapse is None:
         relapse = pd.DataFrame([], columns=[rsubj_col, rdate_col])
         relapse_start = data[date_col].min()
     else:
         relapse = relapse[[rsubj_col, rdate_col]].copy().dropna() # remove missing values from columns of interest
-        relapse[rdate_col] = col_to_date(relapse[rdate_col])
+        relapse[rdate_col] = pd.to_datetime(relapse[rdate_col]) #col_to_date(relapse[rdate_col]) #
         relapse_start = relapse[rdate_col].min()
     # Convert dates to days from minimum #_d_#
     global_start = min(data[date_col].min(), relapse_start)
@@ -1163,13 +1166,13 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
     # Remove missing values from columns of interest
     data_sep = data_sep.loc[~data_sep[[subj_col, value_col, date_col]].isna().any(axis=1), :].dropna()
     # Convert dates to datetime.date format
-    data_sep[date_col] = col_to_date(data_sep[date_col])
+    data_sep[date_col] = pd.to_datetime(data_sep[date_col]) #col_to_date(data_sep[date_col]) #
     if relapse is None:
         relapse = pd.DataFrame([], columns=[rsubj_col, rdate_col])
         relapse_start = data_sep[date_col].min()
     else:
         relapse = relapse[[rsubj_col, rdate_col]].copy().dropna() # remove missing values from columns of interest
-        relapse[rdate_col] = col_to_date(relapse[rdate_col])
+        relapse[rdate_col] = pd.to_datetime(relapse[rdate_col]) #col_to_date(relapse[rdate_col]) #
         relapse_start = relapse[rdate_col].min()
     # Convert dates to days from minimum #_d_#
     global_start = min(data[date_col].min(), relapse_start)
@@ -1496,13 +1499,13 @@ def confirmed_value(data, value_col, date_col, idx=0, min_confirmed=None,
     # Remove missing values from columns of interest
     data = data[[value_col, date_col]].copy().dropna()
     # Convert dates to datetime.date format
-    data[date_col] = col_to_date(data[date_col])
+    data[date_col] = pd.to_datetime(data[date_col]) #col_to_date(data[date_col]) #
     if relapse is None:
         relapse = pd.DataFrame([], columns=[rdate_col])
         relapse_start = data[date_col].min()
     else:
         relapse = relapse[[rdate_col]].copy().dropna() # remove missing values from columns of interest
-        relapse[rdate_col] = col_to_date(relapse[rdate_col])
+        relapse[rdate_col] = col_to_date(relapse[rdate_col]) #col_to_date(relapse[rdate_col]) #
         relapse_start = relapse[rdate_col].min()
     # Convert dates to days from minimum #_d_#
     global_start = min(data[date_col].min(), relapse_start)
