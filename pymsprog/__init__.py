@@ -1436,6 +1436,7 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
 
     data_sep[date_col] = [global_start + datetime.timedelta(
                     days=int(data_sep.loc[ii,date_col])) for ii in data_sep.index]
+    data_sep[date_col] = pd.to_datetime(data_sep[date_col])
 
     return (data_sep, pd.DataFrame(raw_events, columns=[subj_col,date_col])) if return_raw_dates else data_sep
 
