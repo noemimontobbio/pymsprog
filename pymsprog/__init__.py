@@ -1047,7 +1047,7 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
 
         nvisits = len(data_id)
         if verbose > 0:
-            print('\nSubject #%d: %d visit%s'
+            print('\nSubject #%s: %d visit%s'
               %(subjid,nvisits,'' if nvisits==1 else 's'))
             if any(ucounts>1):
                 print('Found multiple visits in the same day: only keeping last')
@@ -1218,7 +1218,7 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
         nrel = len(relapse_id)
 
         if verbose > 0:
-            print('\nSubject #%d: %d visit%s, %d relapse%s'
+            print('\nSubject #%s: %d visit%s, %d relapse%s'
               %(subjid,nvisits,'' if nvisits==1 else 's', nrel,'' if nrel==1 else 's'))
 
         relapse_dates = relapse_id[rdate_col].values
