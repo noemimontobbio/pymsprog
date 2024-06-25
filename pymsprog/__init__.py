@@ -1215,11 +1215,6 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
         nvisits = len(data_id)
 
         relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].reset_index(drop=True)
-        nrel = len(relapse_id)
-
-        if verbose > 0:
-            print('\nSubject #%s: %d visit%s, %d relapse%s'
-              %(subjid,nvisits,'' if nvisits==1 else 's', nrel,'' if nrel==1 else 's'))
 
         relapse_dates = relapse_id[rdate_col].values
         relapse_df = pd.DataFrame([relapse_dates]*len(data_id))
@@ -1233,6 +1228,12 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
         # First visit out of relapse influence
         rel_free_bl = next((x for x in range(len(data_id))
                         if data_id.loc[x,'closest_rel-'] > relapse_to_bl), None)
+
+        if len(data_id)>0:
+            nrel = len(relapse_id) if len(data_id)==0 else sum(relapse_id['Data'] >= data_id.loc[0, 'Dtvis'])
+        if verbose > 0:
+            print('\nSubject #%s: %d visit%s, %d relapse%s'
+              %(subjid, nvisits, '' if nvisits==1 else 's', nrel, '' if nrel==1 else 's'))
 
 
         if mode != 'none':
@@ -1252,7 +1253,7 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
                 # bump = data_id[value_col] - data_id.loc[:rel_free_bl, value_col].min() # values exceeding the minimum up to the baseline
                 # data_id.loc[:rel_free_bl-1, bump_col] = data_id.loc[:rel_free_bl-1, bump_col] + bump.loc[:rel_free_bl-1]
                 if verbose==2:
-                    print('Moving baseline to first visit out of relapse influence (%dth)' %(rel_free_bl+1))
+                    print('Moving baseline to first visit out of relapse influence (%dth visit)' %(rel_free_bl+1))
             else:
                 glob_bl_idx = 0
                 global_bl = data_id.loc[0, :].copy()
@@ -1261,6 +1262,8 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
             bl_date = data_id[date_col].min() #data_id[date_col].max() if rel_free_bl is None else data_id.loc[rel_free_bl, date_col] #
             relapse_id = relapse_id.loc[relapse_id[rdate_col] > bl_date, #_d_# datetime.timedelta(days=relapse_to_bl)
                             :].reset_index(drop=True) # ignore relapses occurring before or at baseline
+            if rel_free_bl is not None and rel_free_bl > 0:
+                print('Relapses left to analyse: %d' %len(relapse_id))
 
             ##########
             visit_dates = data_id[date_col].values
