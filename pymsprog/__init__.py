@@ -1508,7 +1508,7 @@ def confirmed_value(data, value_col, date_col, idx=0, min_confirmed=None,
         relapse_start = data[date_col].min()
     else:
         relapse = relapse[[rdate_col]].copy().dropna() # remove missing values from columns of interest
-        relapse[rdate_col] = col_to_date(relapse[rdate_col]) #col_to_date(relapse[rdate_col]) #
+        relapse[rdate_col] = pd.to_datetime(relapse[rdate_col]) #col_to_date(relapse[rdate_col]) #
         relapse_start = relapse[rdate_col].min()
     # Convert dates to days from minimum #_d_#
     global_start = min(data[date_col].min(), relapse_start)
