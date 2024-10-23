@@ -90,6 +90,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
     #####################################################################################
     # SETUP
 
+    #### for debugging
+    #np.seterr(all='raise')
+    ####
+
     warning_msgs = []
 
     if outcome is None or outcome.lower() not in ['edss', 'nhpt', 't25fw', 'sdmt']:
@@ -113,6 +117,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
     except TypeError:
         conf_tol_days = [conf_tol_days, conf_tol_days] # if it's not, make it a pair with equal elements
 
+    data = data.copy()
+
     if event=='firstRAW':
         relapse_rebl = False
 
@@ -122,7 +128,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
         rdate_col = date_col
     if validconf_col is None:
         validconf_col = 'validconf'
-        data[validconf_col] = 1
+        data.loc[:, validconf_col] = 1
 
     if relapse_indep is None:
         relapse_indep = {'bl': (0, 0), 'event': (90, 30), 'conf': (90, 30)}
@@ -151,17 +157,22 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
     # Convert dates to datetime.date format
     data[date_col] = pd.to_datetime(data[date_col]) #col_to_date(data[date_col]) #
     if relapse is None:
+        relapsedata = False
         relapse_rebl = False
         relapse = pd.DataFrame([], columns=[rsubj_col, rdate_col])
         relapse_start = data[date_col].min()
     else:
+        relapsedata = True
         relapse = relapse[[rsubj_col, rdate_col]].copy().dropna()
         relapse[rdate_col] = pd.to_datetime(relapse[rdate_col]) #col_to_date(relapse[rdate_col]) #
         relapse_start = relapse[rdate_col].min()
 
     # Convert dates to days from minimum #_d_#
     global_start = min(data[date_col].min(), relapse_start)
-    relapse[rdate_col] = (relapse[rdate_col] - global_start).apply(lambda x : x.days)
+    if relapsedata:
+        relapse[rdate_col] = (relapse[rdate_col] - global_start).apply(lambda x : x.days)
+    else:
+        relapse[rdate_col] = relapse[rdate_col].astype(int)
     data[date_col] = (data[date_col] - global_start).apply(lambda x : x.days)
 
     if subjects is not None:
@@ -195,7 +206,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                        + ['sust_days', 'sust_last'])
     results[subj_col] = np.repeat(all_subj, max_nevents)
     results['nevent'] = np.tile(np.arange(1,max_nevents+1), nsub)
-    summary = pd.DataFrame([[0]*6]*nsub, columns=['event_sequence', 'improvement', 'progression',
+    summary = pd.DataFrame([['']+[0]*5]*nsub, columns=['event_sequence', 'improvement', 'progression',
                                                   'RAW', 'PIRA', 'undefined_prog'], index=all_subj)
     total_fu = {s : 0 for s in all_subj}
 
@@ -245,8 +256,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
         relapse_df = pd.DataFrame([relapse_dates]*len(data_id))
         relapse_df['visit'] = data_id[date_col].values
         dist = relapse_df.drop(['visit'],axis=1).subtract(relapse_df['visit'], axis=0) #_d_# #.apply(lambda x : pd.to_timedelta(x).dt.days)
-        distm = - dist.mask(dist>0, other= - float('inf'))
-        distp = dist.mask(dist<0, other=float('inf'))
+        distm = - dist.mask(dist>0)  # other=-float('inf')
+        distp = dist.mask(dist<0)  # other=float('inf')
+        distm[distm.isna()] = float('inf')
+        distp[distp.isna()] = float('inf')
         data_id['closest_rel-'] = float('inf') if all(distm.isna()) else distm.min(axis=1)
         data_id['closest_rel+'] = float('inf') if all(distp.isna()) else distp.min(axis=1)
 
