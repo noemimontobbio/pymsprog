@@ -21,7 +21,8 @@ import warnings
 
 def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
            validconf_col=None, # tmp - for opera
-           relapse=None, rsubj_col=None, rdate_col=None, delta_fun=None, worsening=None,
+           relapse=None, rsubj_col=None, rdate_col=None,
+           delta_fun=None, worsening=None, valuedelta_col=None,
            event='firstprog', baseline='fixed',
            conf_weeks=12, conf_tol_days=30, conf_unbounded_right=False,
            require_sust_weeks=0, check_intermediate=True,
@@ -53,7 +54,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                     'firstPIRA' [first PIRA]
                     'firstRAW' [first RAW]
                     'multiple'[all events, default]
-        baseline, str: 'fixed'[default], 'roving', 'roving_impr'
+        baseline, str: 'fixed'[default], 'roving', 'roving_impr', 'roving_wors'
         conf_weeks, int or list-like : period before confirmation (weeks)
         conf_tol_days, int or list-like of length 1 or 2: tolerance window for confirmation visit (days): [t(weeks)-conf_tol_days[0](days), t(weeks)+conf_tol_days[0](days)]
         conf_unbounded_right, bool: if True, confirmation window is [t(weeks)-conf_tol_days, inf)
@@ -129,6 +130,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
     if validconf_col is None:
         validconf_col = 'validconf'
         data.loc[:, validconf_col] = 1
+    if valuedelta_col is None:
+        valuedelta_col = value_col
 
     if relapse_indep is None:
         relapse_indep = {'bl': (0, 0), 'event': (90, 30), 'conf': (90, 30)}
@@ -145,14 +148,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
     #     return compute_delta(value, outcome) if delta_fun is None else delta_fun(value)
 
     # Define local `is_event` function
-    def isevent_loc(x, baseline, type='prog', st=False):
+    def isevent_loc(x, baseline, type='prog', st=False, baseline_delta=None):
         return is_event(x, baseline, type=type, outcome=outcome, worsening=worsening,
-                        sub_threshold=st, delta_fun=delta_fun)
+                        sub_threshold=st, delta_fun=delta_fun, baseline_delta=baseline_delta)
     #_c_########
 
 
     # Remove missing values from columns of interest
-    data = data[[subj_col, value_col, date_col, validconf_col]].copy().dropna()  #_c_#
+    data = data[np.unique([subj_col, value_col, date_col, validconf_col, valuedelta_col])].copy().dropna()  #_c_#
 
     # Convert dates to datetime.date format
     data[date_col] = pd.to_datetime(data[date_col]) #col_to_date(data[date_col]) #
@@ -181,16 +184,17 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
 
     # Check if values are in correct range
     if outcome is not None:
-        if (data[value_col]<0).any():
-            raise ValueError('invalid %s scores' %outcome.upper())
-        elif outcome=='edss' and (data[value_col]>10).any():
-            raise ValueError('invalid %s scores' %outcome.upper())
-        elif outcome=='sdmt' and (data[value_col]>110).any():
-            raise ValueError('SDMT scores >110')
-        elif outcome=='nhpt' and (data[value_col]>300).any():
-            warning_msgs.append('NHPT scores >300')
-        elif outcome=='t25fw' and (data[value_col]>180).any():
-            warning_msgs.append('T25FW scores >180')
+        for vcol in np.unique([value_col, valuedelta_col]):
+            if (data[vcol]<0).any():
+                raise ValueError('invalid %s scores' %outcome.upper())
+            elif outcome=='edss' and (data[vcol]>10).any():
+                raise ValueError('invalid %s scores' %outcome.upper())
+            elif outcome=='sdmt' and (data[vcol]>110).any():
+                raise ValueError('SDMT scores >110')
+            elif outcome=='nhpt' and (data[vcol]>300).any():
+                warning_msgs.append('NHPT scores >300')
+            elif outcome=='t25fw' and (data[vcol]>180).any():
+                warning_msgs.append('T25FW scores >180')
 
     #####################################################################################
     # Assess progression
@@ -300,8 +304,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
 
             # Event detection
             change_idx = next((x for x in range(search_idx,nvisits)
-                    if isevent_loc(data_id.loc[x,value_col], bl[value_col],
-                                   type='change', st=sub_threshold) # first occurring value!=baseline
+                    if isevent_loc(data_id.loc[x,value_col], bl[value_col], type='change',
+                        st=sub_threshold, baseline_delta=data_id.loc[bl_idx,valuedelta_col]) # first occurring value!=baseline
                         and (data_id.loc[x, 'closest_rel-'] >= relapse_to_event)), None) # occurring at least `relapse_to_event` days from last relapse
             #_c_# data_id.loc[x,value_col]!=bl[value_col]
             if change_idx is None: # value does not change in any subsequent visit
@@ -339,10 +343,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                 # CONFIRMED IMPROVEMENT:
                 # --------------------
                 if (len(conf_idx) > 0 # confirmation visits available
-                        and isevent_loc(data_id.loc[change_idx,value_col], bl[value_col], type='impr') # value decreased (>delta) from baseline
-                        and (all([isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr')
+                        and isevent_loc(data_id.loc[change_idx,value_col], bl[value_col], type='impr',
+                                        baseline_delta=data_id.loc[bl_idx,valuedelta_col]) # value decreased (>delta) from baseline
+                        and (all([isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
+                                              baseline_delta=data_id.loc[bl_idx,valuedelta_col])
                                  for x in range(change_idx+1,conf_idx[0]+1)]) # decrease is confirmed at all visits between event and confirmation visit
-                            if check_intermediate else isevent_loc(data_id.loc[conf_idx[0],value_col], bl[value_col], type='impr'))
+                            if check_intermediate else isevent_loc(data_id.loc[conf_idx[0],value_col], bl[value_col],
+                                                        type='impr', baseline_delta=data_id.loc[bl_idx,valuedelta_col]))
                         and phase == 0 # skip if re-checking for PIRA after post-relapse re-baseline
                         and not ((event in ('firstprog', 'firstprogtype', 'firstPIRA', 'firstRAW'))
                                  and baseline=='fixed') # skip if only searching for progressions with a fixed baseline
@@ -353,12 +360,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                     #              for x in range(change_idx+1,conf_idx[0]+1)]) # decrease is confirmed at first valid date
                     #_c_# fin qua!
                     next_change = next((x for x in range(conf_idx[0]+1,nvisits)
-                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr')), None) #_c_# data_id.loc[x,value_col] - bl[value_col] > - delta(bl[value_col])
+                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
+                                           baseline_delta=data_id.loc[bl_idx,valuedelta_col])), None) #_c_# data_id.loc[x,value_col] - bl[value_col] > - delta(bl[value_col])
                     conf_idx = conf_idx if next_change is None else [ic for ic in conf_idx if ic<next_change] # confirmed visits
                     #_conf_# #conf_t = conf_t[:len(conf_idx)]
                     # sustained until:
                     next_nonsust = next((x for x in range(conf_idx[0]+1,nvisits) #_r_# #conf_idx[-1]
-                    if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr') #_c_# # decrease not sustained
+                    if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
+                                       baseline_delta=data_id.loc[bl_idx,valuedelta_col]) #_c_# # decrease not sustained
                         ), None)
 
                     valid_impr = 1
@@ -372,7 +381,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         valid_impr = ((next_nonsust is None) or (data_id.loc[next_nonsust,date_col]
                                     - data_id.loc[change_idx,date_col]) >= require_sust_weeks*7 #.days #_d_# # improvement sustained up to end of follow-up, or for `require_sust_weeks` weeks
                                       ) if check_intermediate else isevent_loc(data_id.loc[sust_vis,value_col], # improvement confirmed at last visit, or first visit after `require_sust_weeks` weeks
-                                    bl[value_col], type='impr')
+                                    bl[value_col], type='impr', baseline_delta=data_id.loc[bl_idx,valuedelta_col])
                     if valid_impr:
                         sust_idx = nvisits-1 if next_nonsust is None else next_nonsust-1
 
@@ -400,9 +409,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
 
                         # next change from first confirmation
                         next_change = next((x for x in range(conf_idx[0]+1,nvisits) #_r_# #conf_idx[-1]
-                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr') #_c_# # either decrease not sustained
+                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
+                                           baseline_delta=data_id.loc[bl_idx,valuedelta_col]) #_c_# # either decrease not sustained
                         or isevent_loc(data_id.loc[x,value_col], data_id.loc[conf_idx[0], value_col], #_r_# #conf_idx[-1]
-                                       type='change') # or further valid change from confirmation
+                                       type='change', baseline_delta=data_id.loc[bl_idx,valuedelta_col]) # or further valid change from confirmation
                                     ), None)
 
                         if baseline in ('roving', 'roving_impr'):
@@ -450,11 +460,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                 # CONFIRMED PROGRESSION:
                 # ---------------------
                 elif (data_id.loc[change_idx,value_col] >= min_value
-                        and isevent_loc(data_id.loc[change_idx,value_col], bl[value_col], type='prog') #_c_# # value increased (>delta) from baseline
+                        and isevent_loc(data_id.loc[change_idx,value_col], bl[value_col], type='prog',
+                                        baseline_delta=data_id.loc[bl_idx,valuedelta_col]) #_c_# # value increased (>delta) from baseline
                     and ((len(conf_idx) > 0 # confirmation visits available
-                        and (all([isevent_loc(data_id.loc[x,value_col], bl[value_col], type='prog') #_c_#
+                        and (all([isevent_loc(data_id.loc[x,value_col], bl[value_col], type='prog',
+                                              baseline_delta=data_id.loc[bl_idx,valuedelta_col]) #_c_#
                                  for x in range(change_idx+1,conf_idx[0]+1)]) # increase is confirmed at (all visits up to) first valid date
-                            if check_intermediate else isevent_loc(data_id.loc[conf_idx[0],value_col], bl[value_col], type='prog'))
+                            if check_intermediate else isevent_loc(data_id.loc[conf_idx[0],value_col], bl[value_col],
+                                                        type='prog', baseline_delta=data_id.loc[bl_idx,valuedelta_col]))
                         and all([data_id.loc[x,value_col] >= min_value for x in range(change_idx+1,conf_idx[0]+1)]) # confirmation above min_value too
                         ) or (data_id.loc[change_idx, date_col] - data_id.loc[0, date_col] <= prog_last_visit*7
                               and change_idx==nvisits-1))
@@ -462,12 +475,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                     if change_idx==nvisits-1:
                         conf_idx = [nvisits-1]
                     next_change = next((x for x in range(conf_idx[0]+1,nvisits)
-                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='prog')), None)  #_c_#
+                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='prog',
+                                           baseline_delta=data_id.loc[bl_idx,valuedelta_col])), None)  #_c_#
                     conf_idx = conf_idx if next_change is None else [ic for ic in conf_idx if ic<next_change] # confirmed dates
                     #_conf_# #conf_t = conf_t[:len(conf_idx)]
                     # sustained until:
                     next_nonsust = next((x for x in range(conf_idx[0]+1,nvisits) #_r_# #conf_idx[-1]
-                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='prog') #_c_# # increase not sustained
+                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='prog',
+                                           baseline_delta=data_id.loc[bl_idx,valuedelta_col]) #_c_# # increase not sustained
                                     ), None)
                     valid_prog = 1
                     if require_sust_weeks:
@@ -480,7 +495,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         valid_prog = ((next_nonsust is None) or (data_id.loc[next_nonsust,date_col]
                                     - data_id.loc[change_idx,date_col]) >= require_sust_weeks*7 #.days #_d_# # progression sustained up to end of follow-up, or for `require_sust_weeks` weeks
                                       ) if check_intermediate else isevent_loc(data_id.loc[sust_vis,value_col], # progression confirmed at last visit, or first visit after `require_sust_weeks` weeks
-                                    bl[value_col], type='prog')
+                                    bl[value_col], type='prog', baseline_delta=data_id.loc[bl_idx,valuedelta_col])
                     if valid_prog:
 
                         nev = len(event_type)
@@ -580,17 +595,19 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         #### #_conf_#
 
                         next_change = next((x for x in range(conf_idx[0]+1,nvisits) #_r_# #conf_idx[-1]
-                            if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='prog') #_c_# # either increase not sustained
+                            if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='prog',
+                                               baseline_delta=data_id.loc[bl_idx,valuedelta_col]) #_c_# # either increase not sustained
                             or isevent_loc(data_id.loc[x,value_col], data_id.loc[conf_idx[0],value_col], #_r_# #conf_idx[-1]
-                                           type='change') #_c_# # or further valid change from confirmation
+                                           type='change', baseline_delta=data_id.loc[bl_idx,valuedelta_col]) #_c_# # or further valid change from confirmation
                                         ), None)
                         next_change_ev = next((x for x in range(change_idx+1,nvisits) #_r_#
-                            if isevent_loc(data_id.loc[x,value_col], bl[value_col], type='change') # change from event
+                            if isevent_loc(data_id.loc[x,value_col], bl[value_col], type='change',
+                                           baseline_delta=data_id.loc[bl_idx,valuedelta_col]) # change from event
                                         ), None)
 
                     if len(conf_t)==0 or (phase==1 and len(event_type)==nev):
                         search_idx = change_idx + 1
-                    elif (phase==0 and baseline=='roving'): #or (event_type[-1]=='PIRA' and phase==1): #
+                    elif (phase==0 and baseline in ('roving', 'roving_wors')): #or (event_type[-1]=='PIRA' and phase==1): #
                         bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at first confirmation time
                         search_idx = bl_idx + 1
                     elif phase==0 and (event_type[-1]!='PIRA' and event=='firstPIRA') or (event_type[-1]!='RAW' and event=='firstRAW'):
@@ -609,7 +626,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         and (all([data_id.loc[x,value_col] > bl[value_col]
                                  for x in range(change_idx+1,conf_idx[0]+1)]) # increase is confirmed
                         if check_intermediate else data_id.loc[conf_idx[0],value_col] > bl[value_col])
-                        and baseline == 'roving' and sub_threshold
+                        and baseline in ('roving', 'roving_wors') and sub_threshold
                         and phase == 0 # skip if re-checking for PIRA after post-relapse re-baseline
                         ):
                     next_change = next((x for x in range(conf_idx[0]+1,nvisits)
@@ -943,7 +960,7 @@ def compute_delta(baseline, outcome='edss'):
 #####################################################################################
 
 def is_event(x, baseline, type, outcome=None, worsening=None,
-             sub_threshold=False, delta_fun=None):
+             sub_threshold=False, delta_fun=None, baseline_delta=None):
     """
     Check for change from baseline.
     Arguments:
@@ -953,9 +970,12 @@ def is_event(x, baseline, type, outcome=None, worsening=None,
      outcome: type of test (one of: 'edss','nhpt','t25fw','sdmt')
      worsening: 'increase' or 'decrease'. If outcome is specified, it is automatically assigned
                 ('increase' for edss, nhpt, t25fw; 'decrease' for sdmt)
+     baseline_delta: baseline value to use for delta, if different from baseline
     Returns:
      True if event else False
     """
+    if baseline_delta is None:
+        baseline_delta = baseline
     if outcome in ('edss','nhpt','t25fw'):
         worsening = 'increase'
     elif outcome=='sdmt':
@@ -974,9 +994,9 @@ def is_event(x, baseline, type, outcome=None, worsening=None,
                     return delta_fun(baseline, outcome)
                 except TypeError:
                     return delta_fun(baseline)
-        event_sign = {'increase' : x - baseline >= fun_tmp(baseline, outcome),
-                 'decrease' : x - baseline <= - fun_tmp(baseline, outcome),
-                 'change' : abs(x - baseline) >= fun_tmp(baseline, outcome)}
+        event_sign = {'increase' : x - baseline >= fun_tmp(baseline_delta, outcome),
+                 'decrease' : x - baseline <= - fun_tmp(baseline_delta, outcome),
+                 'change' : abs(x - baseline) >= fun_tmp(baseline_delta, outcome)}
     event = {'prog' : event_sign[worsening], 'impr': event_sign[improvement], 'change' : event_sign['change']}
     return event[type]
 
@@ -1243,7 +1263,7 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
                         if data_id.loc[x,'closest_rel-'] > relapse_to_bl), None)
 
         if len(data_id)>0:
-            nrel = len(relapse_id) if len(data_id)==0 else sum(relapse_id['Data'] >= data_id.loc[0, 'Dtvis'])
+            nrel = len(relapse_id) if len(data_id)==0 else sum(relapse_id[rdate_col] >= data_id.loc[0, date_col])
         if verbose > 0:
             print('\nSubject #%s: %d visit%s, %d relapse%s'
               %(subjid, nvisits, '' if nvisits==1 else 's', nrel, '' if nrel==1 else 's'))
