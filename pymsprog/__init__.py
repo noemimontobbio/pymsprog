@@ -236,7 +236,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
         nvisits = len(data_id)
         first_visit = data_id[date_col].min()
         relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].copy().reset_index(drop=True)
-        relapse_id = relapse_id.loc[relapse_id[rdate_col] >= relapse_to_bl,:] # ignore relapses occurring before first visit
+        relapse_id = relapse_id.loc[relapse_id[rdate_col] >= first_visit - relapse_to_bl,:] # ignore relapses occurring before first visit
                                             #_d_# first_visit-datetime.timedelta(days=relapse_to_bl)
         relapse_dates = relapse_id[rdate_col].values
         nrel = len(relapse_dates)
@@ -282,6 +282,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                   # phase will become 1 when re-searching for PIRA events
         conf_window = [(int(c*7) - conf_tol_days[0], float('inf')) if conf_unbounded_right
                        else (int(c*7) - conf_tol_days[0], int(c*7) + conf_tol_days[1]) for c in conf_weeks]
+        irel = 0 if nrel==0 else next((r for r in range(nrel) if relapse_dates[r] > data_id.loc[bl_idx, date_col]), None)
 
         while proceed:
 
@@ -321,6 +322,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                 proceed = 0
                 if verbose == 2:
                     print('No %s change in any subsequent visit: end process' %outcome.upper())
+            elif (relapse_rebl and irel is not None
+                  and nrel > irel and change_idx + (0 if event=='firstPIRA' else relapse_assoc) >= relapse_dates[irel]
+                ):
+                search_idx = change_idx
             else:
                 ###### #_conf_#
                 # conf_idx = [next((x for x in range(change_idx+1, nvisits)
@@ -360,14 +365,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         ######( #_rrebl_#
                         #and phase == 0 # skip if re-checking for PIRA after post-relapse re-baseline
                         ######)
-                        and not ((event in ('firstprog', 'firstprogtype', 'firstPIRA', 'firstRAW'))
-                                 and baseline=='fixed') # skip if only searching for progressions with a fixed baseline
+                        # and not ((event in ('firstprog', 'firstprogtype', 'firstPIRA', 'firstRAW'))
+                        #          and baseline == 'fixed')  # skip this event if only searching for progressions with a fixed baseline
                     ):
-                    #_c_#
-                    # and data_id.loc[change_idx,value_col] - bl[value_col] <= - delta(bl[value_col]) # value decreased (>delta) from baseline
-                    #     and all([data_id.loc[x,value_col] - bl[value_col] <= - delta(bl[value_col])
-                    #              for x in range(change_idx+1,conf_idx[0]+1)]) # decrease is confirmed at first valid date
-                    #_c_# fin qua!
                     next_change = next((x for x in range(conf_idx[0]+1,nvisits)
                         if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
                                            baseline_delta=data_id.loc[bl_idx,valuedelta_col])), None) #_c_# data_id.loc[x,value_col] - bl[value_col] > - delta(bl[value_col])
@@ -425,8 +425,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                                     ), None)
 
                         if baseline in ('roving', 'roving_impr'):
-                            bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last confirmation time
-                            search_idx = bl_idx + 1
+                            bl_idx = conf_idx[0] # set new baseline at first confirmation time
+                            search_idx = nvisits if next_change is None else next_change
                         else:
                             search_idx = nvisits if next_change is None else next_change #next_nonsust
 
@@ -434,10 +434,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                             print('%s improvement (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
                                   %(outcome.upper(), change_idx+1,
                                     global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
-                                    conf_t.keys(),  #_conf_#
+                                    ', '.join([str(x) for x in conf_t.keys()]),  #_conf_#
                                     sust_idx+1,
                                     global_start + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
-                            print('New settings: baseline at visit no.%d, searching for events from visit no.%s on'
+                            print('Baseline at visit no.%d, searching for events from visit no.%s on'
                                   %(bl_idx+1, '-' if search_idx>=nvisits else search_idx+1))
 
                     else:
@@ -460,12 +460,12 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         ):
                     next_change = next((x for x in range(conf_idx[0]+1,nvisits)
                         if data_id.loc[x,value_col] >= bl[value_col]), None)
-                    bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last consecutive decreased value
-                    search_idx = bl_idx + 1
+                    bl_idx = conf_idx[0] # set new baseline at first confirmation time
+                    search_idx = nvisits if next_change is None else next_change
                     if verbose == 2:
                         print('Confirmed sub-threshold %s improvement (visit no.%d)'
                               %(outcome.upper(), change_idx+1))
-                        print('New settings: baseline at visit no.%d, searching for events from visit no.%s on'
+                        print('Baseline at visit no.%d, searching for events from visit no.%s on'
                               %(bl_idx+1, '-' if search_idx is None else search_idx+1))
 
                 # CONFIRMED PROGRESSION:
@@ -509,94 +509,111 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                                     bl[value_col], type='prog', baseline_delta=data_id.loc[bl_idx,valuedelta_col])
                     if valid_prog:
 
+                        include_event = True
+
                         nev = len(event_type)
 
                         sust_idx = nvisits-1 if next_nonsust is None else next_nonsust-1
 
-                        if (data_id.loc[change_idx,'closest_rel-'] <= relapse_assoc
-                            ######( #_rrebl_#
-                            # and phase==0
-                            ######)
-                            ): # event is relapse-associated
-                            if event=='firstPIRA' and baseline=='fixed':
-                                search_idx = change_idx + 1 # skip this event if searching for PIRA only (with a fixed baseline)
-                                continue
-                            event_type.append('RAW')
-                            event_index.append(change_idx)
-                        elif data_id.loc[change_idx,'closest_rel-'] > relapse_assoc: # event is not relapse-associated
-                            if (event=='firstRAW' and baseline=='fixed'
+                        if (data_id.loc[change_idx,'closest_rel-'] <= relapse_assoc # event is relapse-associated
                             ######( #_rrebl_#
                             # and phase==0
                             ######)
                             ):
-                                search_idx = change_idx + 1 # skip this event if only searching for RAW with a fixed baseline
-                                continue
-                            intervals = {ic : [] for ic in conf_idx}
-                            for ic in conf_idx:
-                                for point in ('bl', 'event', 'conf'):
-                                    t = bl[date_col] if point=='bl' else (data_id.loc[change_idx,date_col]
-                                            if point=='event' else data_id.loc[ic,date_col])
-                                    if relapse_indep[point][0] is not None:
-                                        t0 = t - relapse_indep[point][0]
-                                    if relapse_indep[point][1] is not None:
-                                        t1 = t + relapse_indep[point][1]
-                                        if t1>t0:
-                                            intervals[ic].append([t0,t1])
-                            rel_inbetween = [np.logical_or.reduce([(a[0]<=relapse_dates) & (relapse_dates<=a[1])
-                                            for a in intervals[ic]]).any() for ic in conf_idx]
+                            if event=='firstPIRA' and baseline=='fixed':
+                                # skip this event if searching for PIRA only (with a fixed baseline)
+                                if verbose==2:
+                                    print('Worsening confirmed but not a PIRA event: skipped')
+                                include_event = False
+                            else:
+                                event_type.append('RAW')
+                                event_index.append(change_idx)
+                        elif data_id.loc[change_idx,'closest_rel-'] > relapse_assoc: # event is not relapse-associated
+                            if (event=='firstRAW' and baseline=='fixed'
+                            ######( #_rrebl_#
+                            # and phase==0
+                            ######),
+                            ):
+                                # skip this event if only searching for RAW with a fixed baseline
+                                if verbose == 2:
+                                    print('Worsening confirmed but not a RAW event: skipped')
+                                include_event = False
+                            else:
+                                # Check if it's PIRA *(
+                                intervals = {ic : [] for ic in conf_idx}
+                                for ic in conf_idx:
+                                    for point in ('bl', 'event', 'conf'):
+                                        t = bl[date_col] if point=='bl' else (data_id.loc[change_idx,date_col]
+                                                if point=='event' else data_id.loc[ic,date_col])
+                                        if relapse_indep[point][0] is not None:
+                                            t0 = t - relapse_indep[point][0]
+                                        if relapse_indep[point][1] is not None:
+                                            t1 = t + relapse_indep[point][1]
+                                            if t1>t0:
+                                                intervals[ic].append([t0,t1])
+                                rel_inbetween = [np.logical_or.reduce([(a[0]<=relapse_dates) & (relapse_dates<=a[1])
+                                                for a in intervals[ic]]).any() for ic in conf_idx]
 
-                            pconf_idx = [conf_idx[i] for i in range(len(conf_idx)) if not rel_inbetween[i]]  #_piraconf_#
-                            # pconf_idx = conf_idx if not any(rel_inbetween) else conf_idx[:next(i for i in
-                            #                                         range(len(conf_idx)) if rel_inbetween[i])]
-                            pconf_t = copy.deepcopy(conf_t) #_conf_# [conf_t[i] for i in range(len(conf_t)) if not rel_inbetween[i]] #conf_t[:len(pconf_idx)] # #_piraconf_#
-                            if len(pconf_idx)>0: # if pira is confirmed
-                                ######## #_conf_#
+                                pconf_idx = [conf_idx[i] for i in range(len(conf_idx)) if not rel_inbetween[i]]  #_piraconf_#
+                                # pconf_idx = conf_idx if not any(rel_inbetween) else conf_idx[:next(i for i in
+                                #                                         range(len(conf_idx)) if rel_inbetween[i])]
+                                pconf_t = copy.deepcopy(conf_t) #_conf_# [conf_t[i] for i in range(len(conf_t)) if not rel_inbetween[i]] #conf_t[:len(pconf_idx)] # #_piraconf_#
+                                if len(pconf_idx)>0: # if pira is confirmed
+                                    ######## #_conf_#
+                                    for m in conf_weeks: #[1:]: #_piraconf_#
+                                        confirmed_at = np.intersect1d(pconf_t[m], pconf_idx)
+                                        if len(confirmed_at)==0:
+                                            del pconf_t[m]
+                                        pira_conf[m].append(int(len(confirmed_at)>0)) #_conf_# int(m in conf_t)
+                                    ######## #_conf_#
+
+                                    event_type.append('PIRA')
+                                    event_index.append(change_idx)
+                                elif event=='firstPIRA' and baseline=='fixed': # #_rrebl_# elif phase == 0: # if pira is not confirmed, and we're not re-searching for pira events only
+                                    if verbose==2:
+                                        print('Worsening confirmed but not a PIRA event: skipped')
+                                    include_event = False
+                                else:
+                                    event_type.append('prog')
+                                    event_index.append(change_idx)
+                                # )*
+
+                        if include_event:
+                            # **(
+                            if event_type[-1] != 'PIRA': # #_rrebl_# and phase==0
                                 for m in conf_weeks: #[1:]: #_piraconf_#
-                                    confirmed_at = np.intersect1d(pconf_t[m], pconf_idx)
-                                    if len(confirmed_at)==0:
-                                        del pconf_t[m]
-                                    pira_conf[m].append(int(len(confirmed_at)>0)) #_conf_# int(m in conf_t)
-                                ######## #_conf_#
+                                    pira_conf[m].append(None)
 
-                                event_type.append('PIRA')
-                                event_index.append(change_idx)
-                            else: # #_rrebl_# elif phase == 0: # if pira is not confirmed, and we're not re-searching for pira events only
-                                event_type.append('prog')
-                                event_index.append(change_idx)
-
-
-                        if event_type[-1] != 'PIRA': # #_rrebl_# and phase==0
-                            for m in conf_weeks: #[1:]: #_piraconf_#
-                                pira_conf[m].append(None)
-
-                        # #_rrebl_# if event_type[-1] == 'PIRA' or phase == 0:
-                        bldate.append(global_start + datetime.timedelta(days=bl[date_col].item())) #_d_#
-                        blvalue.append(bl[value_col])
-                        edate.append(global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item())) #_d_#
-                        evalue.append(data_id.loc[change_idx,value_col])
-                        time2event.append(data_id.loc[change_idx,date_col] - data_id.loc[0,date_col]) #.days #_d_#
-                        bl2event.append(data_id.loc[change_idx,date_col] - bl[date_col]) #.days #_d_#
-                        for m in conf_weeks:
-                            confirmed_at = np.intersect1d(conf_t[m], conf_idx)
-                            if len(confirmed_at)==0:
-                                del conf_t[m]
-                            conf[m].append(1 if len(confirmed_at)>0 else 0) #_conf_# 1 if m in conf_t else 0
-                        sustd.append(data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
-                        sustl.append(int(sust_idx == nvisits-1))
-                        if verbose == 2:
-                            print('%s progression[%s] (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
-                                  %(outcome.upper(), event_type[-1], change_idx+1,
-                                    global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
-                                    pconf_t.keys() if event_type[-1]=='PIRA' else conf_t.keys(), #_conf_#
-                                    sust_idx+1,
-                                    global_start + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
-                        ######( #_rrebl_#
-                        # else:
-                        #     for m in conf_weeks:
-                        #         confirmed_at = np.intersect1d(conf_t[m], conf_idx)
-                        #         if len(confirmed_at)==0:
-                        #             del conf_t[m]
-                        ######)
+                            # #_rrebl_# if event_type[-1] == 'PIRA' or phase == 0:
+                            bldate.append(global_start + datetime.timedelta(days=bl[date_col].item())) #_d_#
+                            blvalue.append(bl[value_col])
+                            edate.append(global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item())) #_d_#
+                            evalue.append(data_id.loc[change_idx,value_col])
+                            time2event.append(data_id.loc[change_idx,date_col] - data_id.loc[0,date_col]) #.days #_d_#
+                            bl2event.append(data_id.loc[change_idx,date_col] - bl[date_col]) #.days #_d_#
+                            for m in conf_weeks:
+                                confirmed_at = np.intersect1d(conf_t[m], conf_idx)
+                                if len(confirmed_at)==0:
+                                    del conf_t[m]
+                                conf[m].append(1 if len(confirmed_at)>0 else 0) #_conf_# 1 if m in conf_t else 0
+                            sustd.append(data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
+                            sustl.append(int(sust_idx == nvisits-1))
+                            if verbose == 2:
+                                print('%s progression[%s] (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
+                                      %(outcome.upper(), event_type[-1], change_idx+1,
+                                        global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
+                                        ', '.join([str(x) for x in (pconf_t.keys() if event_type[-1]=='PIRA'
+                                                                    else conf_t.keys())]), #_conf_#
+                                        sust_idx+1,
+                                        global_start + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
+                            ######( #_rrebl_#
+                            # else:
+                            #     for m in conf_weeks:
+                            #         confirmed_at = np.intersect1d(conf_t[m], conf_idx)
+                            #         if len(confirmed_at)==0:
+                            #             del conf_t[m]
+                            ######)
+                            # )**
 
                     else:
                         if verbose == 2:
@@ -626,11 +643,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                                            baseline_delta=data_id.loc[bl_idx,valuedelta_col]) # change from event
                                         ), None)
 
-                    if len(conf_t)==0:  # #_rrebl_# or (phase==1 and len(event_type)==nev):
+                    if len(conf_t)==0 or not include_event:  # #_rrebl_# or (phase==1 and len(event_type)==nev):
                         search_idx = change_idx + 1
                     elif baseline in ('roving', 'roving_wors'): # #_rrebl_# and phase==0
-                        bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at first confirmation time
-                        search_idx = bl_idx + 1
+                        bl_idx = conf_idx[0] # set new baseline at first confirmation time
+                        search_idx = nvisits if next_change is None else next_change
                     elif (event_type[-1]!='PIRA' and event=='firstPIRA') or (event_type[-1]!='RAW' and event=='firstRAW'):  # #_rrebl_# and phase==0
                         search_idx = nvisits if next_change_ev is None else next_change_ev #_r_#
                     else:
@@ -654,8 +671,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         ):
                     next_change = next((x for x in range(conf_idx[0]+1,nvisits)
                         if data_id.loc[x,value_col] <= bl[value_col]), None)
-                    bl_idx = nvisits-1 if next_change is None else next_change-1 # set new baseline at last consecutive increased value
-                    search_idx = bl_idx + 1
+                    bl_idx = conf_idx[0] # set new baseline at first confirmation time
+                    search_idx = nvisits if next_change is None else next_change
                     if verbose == 2:
                         print('Confirmed sub-threshold %s progression (visit no.%d)'
                               %(outcome.upper(), change_idx+1))
@@ -670,17 +687,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         print('Change not confirmed: proceed with search')
 
 
-            if (relapse_rebl  # and phase==0 and len(relapse_dates)>0 and not proceed and nrel>0  #_rrebl_#
+            if (relapse_rebl and proceed  # and phase==0 and len(relapse_dates)>0 and not proceed and nrel>0  #_rrebl_#
                 and search_idx < nvisits and ((data_id.loc[bl_idx, date_col] < relapse_dates)
                      & (relapse_dates <= data_id.loc[search_idx, date_col]
                         + (0 if event=='firstPIRA' else relapse_assoc))).any()
                 ):
-                #####( #_rrebl_#
-                if phase==0:
-                    irel = next((r for r in range(nrel) if relapse_dates[r] > bl[date_col]))
-                    if verbose == 2:
-                        print('Completed search with fixed baseline, begin post-relapse rebaseline')
-                #####)
                 phase = 1
                 proceed = 1
                 #####( #_rrebl_#
@@ -1340,7 +1351,7 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
             bl_date = data_id[date_col].min() #data_id[date_col].max() if rel_free_bl is None else data_id.loc[rel_free_bl, date_col] #
             relapse_id = relapse_id.loc[relapse_id[rdate_col] > bl_date, #_d_# datetime.timedelta(days=relapse_to_bl)
                             :].reset_index(drop=True) # ignore relapses occurring before or at baseline
-            if rel_free_bl is not None and rel_free_bl > 0:
+            if rel_free_bl is not None and rel_free_bl > 0 and verbose==2:
                 print('Relapses left to analyse: %d' %len(relapse_id))
 
             ##########
