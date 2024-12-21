@@ -27,7 +27,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
            conf_weeks=12, conf_tol_days=30, conf_unbounded_right=False,
            require_sust_weeks=0, check_intermediate=True,
            relapse_to_bl=30, relapse_to_event=0, relapse_to_conf=30, relapse_assoc=90, relapse_indep=None,
-           sub_threshold=False, relapse_rebl=False, min_value=None, prog_last_visit=False,
+           sub_threshold=False, bl_geq=False, relapse_rebl=False, min_value=None, prog_last_visit=False,
            include_dates=False, include_value=False, include_stable=True, verbose=1):
     """
     Compute MS progression from longitudinal data.
@@ -75,6 +75,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                                 - {'bl':(0,0), 'event':(90, 30), 'conf':(90, 30)}
                                     no relapses within event-90dd->event+30dd and within confirmation-90dd->confirmation+30dd, Muller JAMA Neurol 2023
         sub_threshold, bool: if True, include confirmed sub-threshold events for roving baseline
+        bl_geq, bool: if True, new reference must always be >= than previous reference. When it's not, the old value is assigned to it.
         relapse_rebl, bool: if True, search for PIRA events again with post-relapse re-baseline
         min_value, float: only consider progressions events where the outcome is >= value (default is None, i.e., no threshold)
         prog_last_visit, bool: if True, include progressions occurring at last visit (i.e. with no confirmation)
@@ -283,6 +284,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
         conf_window = [(int(c*7) - conf_tol_days[0], float('inf')) if conf_unbounded_right
                        else (int(c*7) - conf_tol_days[0], int(c*7) + conf_tol_days[1]) for c in conf_weeks]
         irel = 0 if nrel==0 else next((r for r in range(nrel) if relapse_dates[r] > data_id.loc[bl_idx, date_col]), None)
+        bl_last = None
 
         while proceed:
 
@@ -303,12 +305,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                 proceed = 0
                 if verbose == 2:
                     print('Not enough visits left: end process')
-            elif phase==1 and bl_last > data_id.loc[bl_idx,value_col]:
+            elif bl_geq and bl_last is not None and bl_last > data_id.loc[bl_idx, value_col]:
                 ########## Kappos2020 (by Sean Yu)
                 data_id.loc[bl_idx, value_col] = bl_last
                 #########
 
             bl = data_id.iloc[bl_idx,:]
+            bl_last = bl[value_col]
 
             # Event detection
             change_idx = next((x for x in range(search_idx, nvisits)
@@ -695,7 +698,6 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                 phase = 1
                 proceed = 1
                 #####( #_rrebl_#
-                bl_last = bl[value_col]
                 bl_idx = next((x for x in range(bl_idx, nvisits) # visits from current baseline
                                if relapse_dates[irel] <= data_id.loc[x, date_col]  # after `irel`-th relapse
                                ),
@@ -1248,6 +1250,8 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
         rdate_col = date_col
     if isinstance(conf_tol_days, int):
         conf_tol_days = [conf_tol_days, conf_tol_days]
+    if isinstance(relapse_to_bl, int):
+        relapse_to_bl = [relapse_to_bl, 0]
 
     data_sep = data.copy()
     relapse = relapse.copy()
@@ -1316,7 +1320,8 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
 
         # First visit out of relapse influence
         rel_free_bl = next((x for x in range(len(data_id))
-                        if data_id.loc[x,'closest_rel-'] > relapse_to_bl), None)
+                        if data_id.loc[x,'closest_rel-'] > relapse_to_bl[0]
+                        and data_id.loc[x,'closest_rel+'] > relapse_to_bl[1]), None)
 
         if len(data_id)>0:
             nrel = len(relapse_id) if len(data_id)==0 else sum(relapse_id[rdate_col] >= data_id.loc[0, date_col])
@@ -1384,117 +1389,128 @@ def separate_ri_ra(data, relapse, mode, value_col, date_col, subj_col,
                 change_idx = relapse_id.loc[irel,'closest_vis+']
 
                 # Baseline set to last value before the relapse:
-                bl_idx = change_idx-1 if relapse_id.loc[irel,'closest_vis-']==change_idx\
-                    else int(relapse_id.loc[irel,'closest_vis-'])
+                bl_idx = next((int(relapse_id.loc[irel,'closest_vis-'] - n) for n in range(int(relapse_id.loc[irel,'closest_vis-'])) if
+                    relapse_id.loc[irel, rdate_col] - data_id.loc[int(relapse_id.loc[irel,'closest_vis-'])-n, date_col] > relapse_to_bl[1]),
+                    glob_bl_idx)
+                # bl_idx = change_idx-1 if relapse_id.loc[irel,'closest_vis-']==change_idx\
+                #     else int(relapse_id.loc[irel,'closest_vis-'])
 
                 bl = data_id.loc[bl_idx, :].copy()
                 # If baseline is part of a bump caused by a previous relapse, subtract the bump
                 # (unless it ends up below global baseline):
                 bl[value_col] = max(bl[value_col] - bl[bump_col], global_bl[value_col])
 
-                # Look at *all* visits within `relapse_assoc` days from relapse and identify first change (if any)
-                stable = True
+                # Look at *all* visits within `relapse_assoc` days from relapse and identify first CONFIRMED change (if any)
+                confirmed = False
                 ch_idx_tmp = change_idx
-                while (stable and ~np.isnan(change_idx) and ch_idx_tmp<nvisits
-                    and (data_id.loc[ch_idx_tmp,date_col] - relapse_id.loc[irel,rdate_col]) <= relapse_assoc): #_d_# .days # within `relapse_assoc` days from last relapse
-                    change_idx = ch_idx_tmp
-                    stable = (data_id.loc[change_idx,value_col] - bl[value_col]
-                            < delta(bl[value_col])) or ((data_id.loc[ch_idx_tmp,date_col]
-                            - relapse_id.loc[irel,rdate_col]) < relapse_to_event) #_d_# .days
-                            # no increase, or event within `relapse_to_event` days after last relapse
-                    ch_idx_tmp = change_idx + 1
+                while (not confirmed and ~np.isnan(change_idx) and ch_idx_tmp<nvisits
+                    and (data_id.loc[ch_idx_tmp,date_col] - relapse_id.loc[irel,rdate_col]) <= relapse_assoc):
+                    #change_idx = ch_idx_tmp
 
+                    # Look at *all* visits within `relapse_assoc` days from relapse and identify first change (if any)
+                    stable = True
+                    #ch_idx_tmp = change_idx
+                    while (stable and ~np.isnan(change_idx) and ch_idx_tmp<nvisits
+                        and (data_id.loc[ch_idx_tmp,date_col] - relapse_id.loc[irel,rdate_col]) <= relapse_assoc): #_d_# .days # within `relapse_assoc` days from last relapse
+                        change_idx = ch_idx_tmp
+                        stable = (data_id.loc[change_idx,value_col] - bl[value_col]
+                                < delta(bl[value_col])) or ((data_id.loc[ch_idx_tmp,date_col]
+                                - relapse_id.loc[irel,rdate_col]) < relapse_to_event) #_d_# .days
+                                # no increase, or event within `relapse_to_event` days after last relapse
+                        ch_idx_tmp = change_idx + 1
 
-                if (np.isnan(change_idx) # no change, or
-                    or (data_id.loc[change_idx,date_col]
-                        - relapse_id.loc[irel,rdate_col]) > relapse_assoc #_d_# .days # change is out of relapse influence, or
-                    or data_id.loc[change_idx,value_col] - bl[value_col]
-                        < delta(bl[value_col]) # no increase
-                    ):
-                    if verbose == 2:
-                            print('No relapse-associated worsening')
-                    #continue
-                else:
-                    change_idx = int(change_idx)
-                    conf_idx = [[x for x in range(change_idx+1, nvisits)
-                        if c[0] <= data_id.loc[x,date_col] - data_id.loc[change_idx,date_col] <= c[1] # date in confirmation range
-                        and data_id.loc[x,'closest_rel-'] >= relapse_to_conf] # occurring at least `relapse_to_conf` days from last relapse
-                        for c in conf_window]
-                    conf_idx = [x for i in range(len(conf_idx)) for x in conf_idx[i]]
-                    conf_idx = None if len(conf_idx)==0 else min(conf_idx)
-
-                    # CONFIRMED PROGRESSION:
-                    # ---------------------
-                    if (conf_idx is not None # confirmation visits available
-                            and all([data_id.loc[x,value_col] - bl[value_col] >= delta(bl[value_col])
-                                     for x in range(change_idx+1,conf_idx+1)]) # increase is confirmed at first valid date
-                            ):
-                        valid_prog = 1
-                        if require_sust_weeks:
-                            next_nonsust = next((x for x in range(conf_idx+1,nvisits) # next value found
-                            if data_id.loc[x,value_col] - bl[value_col] < delta(bl[value_col]) # increase not sustained
-                                            ), None)
-                            valid_prog = (next_nonsust is None) or (data_id.loc[next_nonsust,date_col]
-                                        - data_id.loc[change_idx,date_col]) > require_sust_weeks*7 #_d_# .days
-                        if valid_prog:
-                            sust_idx = next((x for x in range(conf_idx+1,nvisits) # next value found
-                                        if (data_id.loc[x,date_col] - data_id.loc[change_idx,date_col]) #_d_# .days
-                                        > require_sust_weeks*7
-                                            ), None)
-                            sust_idx = nvisits-1 if sust_idx is None else sust_idx-1 #conf_idx #
-                            # Set value change as the minimum within the "sustained" interval before the following relapse:
-                            end_idx = max(relapse_id.loc[irel+1,'closest_vis+']-1, conf_idx) if irel<len(relapse_id)-1 else sust_idx
-                            # NB: PANDAS SLICING WITH .loc INCLUDES THE RIGHT END!!
-                            value_change = data_id.loc[change_idx:end_idx,value_col].min() - bl[value_col]
-                            # value_change = data_id.loc[change_idx,value_col] - bl[value_col]
-                            # Detect potential bumps:
-                            bump = data_id[value_col] - data_id.loc[change_idx:end_idx,value_col].min() # values exceeding the minimum
-                            bump = np.maximum(bump.loc[change_idx:conf_idx], 0)
-                            data_id.loc[change_idx:conf_idx, bump_col] = data_id.loc[change_idx:conf_idx, bump_col] + bump
-
-                            #_bl_#########
-                            # New baseline: minimum between the two relapses
-                            # bl_idx = data_id.loc[conf_idx:end_idx].sort_values(by=value_col).index[0]
-                            ##############
-
-                            delta_raw.append(value_change)
-                            raw_dates.append(data_id.loc[change_idx,date_col])
-                            if return_raw_dates:
-                                raw_events.append([subjid, global_start + datetime.timedelta(
-                                        days=data_id.loc[change_idx,date_col].item())]) #_d_# data_id.loc[change_idx,date_col]
-                            last_conf = data_id.loc[conf_idx,date_col]
-
-                            if verbose == 2:
-                                print('Relapse-associated confirmed progression on %s'
-                                      %(global_start + datetime.timedelta(
-                                        days=data_id.loc[change_idx,date_col].item())))  #_d_# data_id.loc[change_idx,date_col]
-                        else:
-                            #end_idx = relapse_id.loc[irel+1,'closest_vis+']-1 if irel<len(relapse_id)-1 else next_nonsust-1
-                            # NB: PANDAS SLICING WITH .loc INCLUDES THE RIGHT END!!
-                            bump = data_id[value_col] - data_id.loc[next_nonsust,value_col] #data_id.loc[conf_idx+1:end_idx,value_col].max()
-                            bump = np.maximum(bump.loc[change_idx:next_nonsust-1], 0) #change_idx:min(conf_idx, end_idx)
-                            data_id.loc[change_idx:next_nonsust-1, bump_col] =\
-                                data_id.loc[change_idx:next_nonsust-1, bump_col] + bump
-                            if verbose == 2:
-                                print('Change confirmed but not sustained for >=%d weeks: proceed with search'
-                                      %require_sust_weeks)
-
-                    # NO confirmation:
-                    # ----------------
-                    else:
-                        end_idx = relapse_id.loc[irel+1,'closest_vis+']-1 if irel<len(relapse_id)-1 else conf_idx
-                        if conf_idx is not None and end_idx > change_idx:
-                            # NB: PANDAS SLICING WITH .loc INCLUDES THE RIGHT END!!
-                            bump = data_id[value_col] - bl[value_col]
-                            bump = np.maximum(bump.loc[change_idx:min(conf_idx, end_idx)], 0)
-                            data_id.loc[change_idx:min(conf_idx, end_idx), bump_col] =\
-                                data_id.loc[change_idx:min(conf_idx, end_idx), bump_col] + bump
+                    if (np.isnan(change_idx) # no change, or
+                        or (data_id.loc[change_idx,date_col]
+                            - relapse_id.loc[irel,rdate_col]) > relapse_assoc #_d_# .days # change is out of relapse influence, or
+                        or data_id.loc[change_idx,value_col] - bl[value_col]
+                            < delta(bl[value_col]) # no increase
+                        ):
                         if verbose == 2:
-                            print('Change not confirmed: proceed with search')
+                                print('No relapse-associated worsening')
+                        confirmed = False
+                    else:
+                        change_idx = int(change_idx)
+                        conf_idx = [[x for x in range(change_idx+1, nvisits)
+                            if c[0] <= data_id.loc[x,date_col] - data_id.loc[change_idx,date_col] <= c[1] # date in confirmation range
+                            and data_id.loc[x,'closest_rel-'] >= relapse_to_conf] # occurring at least `relapse_to_conf` days from last relapse
+                            for c in conf_window]
+                        conf_idx = [x for i in range(len(conf_idx)) for x in conf_idx[i]]
+                        conf_idx = None if len(conf_idx)==0 else min(conf_idx)
 
+                        confirmed = (conf_idx is not None  # confirmation visits available
+                            and all([data_id.loc[x, value_col] - bl[value_col] >= delta(bl[value_col])
+                                 for x in range(change_idx + 1, conf_idx + 1)])) # increase is confirmed at first valid date
 
-                    # print(bump)
-                    # print(data_id[bump_col])
+                        # CONFIRMED PROGRESSION:
+                        # ---------------------
+                        if confirmed:
+                            valid_prog = 1
+                            if require_sust_weeks:
+                                next_nonsust = next((x for x in range(conf_idx+1,nvisits) # next value found
+                                if data_id.loc[x,value_col] - bl[value_col] < delta(bl[value_col]) # increase not sustained
+                                                ), None)
+                                valid_prog = (next_nonsust is None) or (data_id.loc[next_nonsust,date_col]
+                                            - data_id.loc[change_idx,date_col]) > require_sust_weeks*7 #_d_# .days
+                            if valid_prog:
+                                sust_idx = next((x for x in range(conf_idx+1,nvisits) # next value found
+                                            if (data_id.loc[x,date_col] - data_id.loc[change_idx,date_col]) #_d_# .days
+                                            > require_sust_weeks*7
+                                                ), None)
+                                sust_idx = nvisits-1 if sust_idx is None else sust_idx-1 #conf_idx #
+                                # Set value change as the minimum within the "sustained" interval before the following relapse:
+                                end_idx = max(relapse_id.loc[irel+1,'closest_vis+']-1, conf_idx) if irel<len(relapse_id)-1 else sust_idx
+                                # NB: PANDAS SLICING WITH .loc INCLUDES THE RIGHT END!!
+                                value_change = data_id.loc[change_idx:end_idx,value_col].min() - bl[value_col]
+                                # value_change = data_id.loc[change_idx,value_col] - bl[value_col]
+                                # Detect potential bumps:
+                                bump = data_id[value_col] - data_id.loc[change_idx:end_idx,value_col].min() # values exceeding the minimum
+                                bump = np.maximum(bump.loc[change_idx:conf_idx], 0)
+                                data_id.loc[change_idx:conf_idx, bump_col] = data_id.loc[change_idx:conf_idx, bump_col] + bump
+
+                                #_bl_#########
+                                # New baseline: minimum between the two relapses
+                                # bl_idx = data_id.loc[conf_idx:end_idx].sort_values(by=value_col).index[0]
+                                ##############
+
+                                delta_raw.append(value_change)
+                                raw_dates.append(data_id.loc[change_idx,date_col])
+                                if return_raw_dates:
+                                    raw_events.append([subjid, global_start + datetime.timedelta(
+                                            days=data_id.loc[change_idx,date_col].item())]) #_d_# data_id.loc[change_idx,date_col]
+                                last_conf = data_id.loc[conf_idx,date_col]
+
+                                if verbose == 2:
+                                    print('Relapse-associated confirmed progression on %s'
+                                          %(global_start + datetime.timedelta(
+                                            days=data_id.loc[change_idx,date_col].item())))  #_d_# data_id.loc[change_idx,date_col]
+                            else:
+                                #end_idx = relapse_id.loc[irel+1,'closest_vis+']-1 if irel<len(relapse_id)-1 else next_nonsust-1
+                                # NB: PANDAS SLICING WITH .loc INCLUDES THE RIGHT END!!
+                                bump = data_id[value_col] - data_id.loc[next_nonsust,value_col] #data_id.loc[conf_idx+1:end_idx,value_col].max()
+                                bump = np.maximum(bump.loc[change_idx:next_nonsust-1], 0) #change_idx:min(conf_idx, end_idx)
+                                data_id.loc[change_idx:next_nonsust-1, bump_col] =\
+                                    data_id.loc[change_idx:next_nonsust-1, bump_col] + bump
+                                if verbose == 2:
+                                    print('Change confirmed but not sustained for >=%d weeks: proceed with search'
+                                          %require_sust_weeks)
+
+                        # NO confirmation:
+                        # ----------------
+                        else:
+                            end_idx = relapse_id.loc[irel+1,'closest_vis+']-1 if irel<len(relapse_id)-1 else conf_idx
+                            if conf_idx is not None and end_idx > change_idx:
+                                # NB: PANDAS SLICING WITH .loc INCLUDES THE RIGHT END!!
+                                bump = data_id[value_col] - bl[value_col]
+                                bump = np.maximum(bump.loc[change_idx:min(conf_idx, end_idx)], 0)
+                                data_id.loc[change_idx:min(conf_idx, end_idx), bump_col] =\
+                                    data_id.loc[change_idx:min(conf_idx, end_idx), bump_col] + bump
+                            if verbose == 2:
+                                print('Change not confirmed: proceed with search')
+
+                        # print(bump)
+                        # print(data_id[bump_col])
+
+                    ch_idx_tmp = change_idx + 1
 
             if verbose == 2:
                 print('Examined all relapses: end process')
