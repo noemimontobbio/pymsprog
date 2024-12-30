@@ -76,7 +76,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                                     no relapses within event-90dd->event+30dd and within confirmation-90dd->confirmation+30dd, Muller JAMA Neurol 2023
         sub_threshold, bool: if True, include confirmed sub-threshold events for roving baseline
         bl_geq, bool: if True, new reference must always be >= than previous reference. When it's not, the old value is assigned to it.
-        relapse_rebl, bool: if True, search for PIRA events again with post-relapse re-baseline
+        relapse_rebl, bool: if True, re-baseline after every relapse
         min_value, float: only consider progressions events where the outcome is >= value (default is None, i.e., no threshold)
         prog_last_visit, bool: if True, include progressions occurring at last visit (i.e. with no confirmation)
         include_dates, bool: if True, report dates of events
@@ -279,8 +279,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
 
         bl_idx, search_idx = 0, 1 # baseline index and index of where we are in the search
         proceed = 1
-        phase = 0 # if post-relapse re-baseline is enabled (relapse_rebl==True),
-                  # phase will become 1 when re-searching for PIRA events
+        ##### #_rrebl_# (
+        # phase = 0 # if post-relapse re-baseline is enabled (relapse_rebl==True),
+        #           # phase will become 1 when re-searching for PIRA events
+        ##### )
         conf_window = [(int(c*7) - conf_tol_days[0], float('inf')) if conf_unbounded_right
                        else (int(c*7) - conf_tol_days[0], int(c*7) + conf_tol_days[1]) for c in conf_weeks]
         irel = 0 if nrel==0 else next((r for r in range(nrel) if relapse_dates[r] > data_id.loc[bl_idx, date_col]), None)
@@ -306,7 +308,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                 if verbose == 2:
                     print('Not enough visits left: end process')
             elif bl_geq and bl_last is not None and bl_last > data_id.loc[bl_idx, value_col]:
-                ########## Kappos2020 (by Sean Yu)
+                ########## Kappos2020 (by Sean Yiu)
                 data_id.loc[bl_idx, value_col] = bl_last
                 #########
 
@@ -655,7 +657,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                         search_idx = nvisits if next_change_ev is None else next_change_ev #_r_#
                     else:
                         search_idx = nvisits if next_change is None else next_change #next_nonsust
-                    if verbose == 2 and phase == 0:
+                    if verbose == 2: # and phase == 0: #_rrebl_#
                         print('Baseline at visit no.%d, searching for events from visit no.%s on'
                               %(bl_idx+1, '-' if search_idx>=nvisits else search_idx+1))
 
@@ -695,9 +697,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome, subjects=None,
                      & (relapse_dates <= data_id.loc[search_idx, date_col]
                         + (0 if event=='firstPIRA' else relapse_assoc))).any()
                 ):
-                phase = 1
                 proceed = 1
                 #####( #_rrebl_#
+                # phase = 1
                 bl_idx = next((x for x in range(bl_idx, nvisits) # visits from current baseline
                                if relapse_dates[irel] <= data_id.loc[x, date_col]  # after `irel`-th relapse
                                ),
