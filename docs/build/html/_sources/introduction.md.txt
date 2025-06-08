@@ -1,13 +1,9 @@
 
-# pymsprog: reproducible assessment of disability progression in MS
-
-![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)
-
-[📖 Documentation](https://pymsprog.readthedocs.io)
+# Introduction
 
 `pymsprog` is a Python package providing tools for exhaustive and reproducible
 analysis of disability course in multiple sclerosis (MS) from longitudinal data. 
-The algorithm is also available for R (https://github.com/noemimontobbio/msprog).
+The algorithm is also available [for R](https://github.com/noemimontobbio/msprog).
 
 Its core function, `MSprog()`, detects and characterises the evolution
 of an outcome measure (EDSS, NHPT, T25FW, SDMT; or any custom outcome
@@ -19,10 +15,10 @@ The dataset contains artificially generated Extended Disability Status Scale (ED
 Symbol Digit Modalities Test (SDMT) longidutinal scores, visit dates, and relapse onset dates
 in a small cohort of example patients.
 
-Please refer to the documentation (https://pymsprog.readthedocs.io) for function usage and data structure. 
+Please refer to the [documentation](https://pymsprog.readthedocs.io) for function usage and data structure. 
 Detailed tutorials providing examples and best-practice tips are also available.
 
-**If you use this package in your work, please cite the following work:**<br />
+**If you use this package in your work, please cite as follows:**<br />
 Montobbio N, Carmisciano L, Signori A, et al. 
 *Creating an automated tool for a consistent and repeatable evaluation of disability progression 
 in clinical studies for multiple sclerosis.* 
@@ -35,7 +31,7 @@ appreciated!
 ## Installation
 
 You can install the latest release of `pymsprog`  with:
-```commandline
+```bash
 pip install pymsprog
 ```
 Alternatively, the development version can be downloaded from 
@@ -51,9 +47,8 @@ can be set by the user and reported as a complement to the results to ensure rep
 
 The example below illustrates the function's usage and output:
 
-```{python}
+```python
 from pymsprog import MSprog, load_toy_data
-import pandas as pd
 
 # Load toy data
 toydata_visits, toydata_relapses = load_toy_data()
