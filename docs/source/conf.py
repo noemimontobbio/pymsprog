@@ -18,6 +18,17 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
+############ test
+import logging
+try:
+    import pymsprog
+    logging.warning("pymsprog imported successfully")
+except ImportError:
+    logging.error("Failed to import pymsprog")
+    sys.exit(1)  # stop the build with an error
+############
+
+
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",     # for Google-style or NumPy-style docstrings

@@ -3,7 +3,7 @@
 
 `pymsprog` is a Python package providing tools for exhaustive and reproducible
 analysis of disability course in multiple sclerosis (MS) from longitudinal data. 
-The algorithm is also available [for R](https://github.com/noemimontobbio/msprog).
+An [R version](https://github.com/noemimontobbio/msprog) of the library is available as well.
 
 Its core function, `MSprog()`, detects and characterises the evolution
 of an outcome measure (EDSS, NHPT, T25FW, SDMT; or any custom outcome
