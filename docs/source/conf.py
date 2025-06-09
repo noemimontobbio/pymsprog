@@ -9,7 +9,7 @@
 project = 'pymsprog'
 copyright = '2025, Noemi Montobbio'
 author = 'Noemi Montobbio'
-release = '0.1.1'
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -18,15 +18,10 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
-############ test
-import logging
-try:
-    import pymsprog
-    logging.warning("pymsprog imported successfully")
-except ImportError:
-    logging.error("Failed to import pymsprog")
-    sys.exit(1)  # stop the build with an error
-############
+
+import pymsprog
+release = pymsprog.__version__
+version = ".".join(release.split(".")[:2])  # major.minor
 
 
 extensions = [
