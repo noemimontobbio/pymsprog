@@ -663,7 +663,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     if verbose == 2:
                         print('Not enough visits left: end process')
 
-            # If `relapse_rebl` is enabled, update relapse index
+            # If `relapse_rebl` is enabled, update relapse index to next relapse after baseline
             if relapse_rebl and irel is not None and irel < nrel and bl_idx < nvisits:
                 irel = next((x for x in range(irel, nrel)  # next relapse
                              if relapse_dates[x] > data_id.loc[bl_idx, date_col]  # after current baseline
@@ -1102,7 +1102,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
                 # Move baseline just after `irel`-th relapse
                 bl_idx = next((x for x in range(bl_idx, nvisits) # visits from current baseline
-                               if relapse_dates[irel] < data_id.loc[x, date_col]  # after `irel`-th relapse
+                               if relapse_dates[irel] <= data_id.loc[x, date_col]  # after `irel`-th relapse
                                ),
                               None)
 
@@ -1117,13 +1117,6 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     proceed = 0
                     if verbose == 2:
                         print('[post-relapse rebaseline] Not enough visits after current baseline: end process')
-
-                # # Update relapse index
-                # if bl_idx is not None:
-                #     # irel += 1
-                #     irel = next((x for x in range(irel + 1, nrel) # next relapse
-                #                if relapse_dates[x] > data_id.loc[bl_idx, date_col]  # after current baseline
-                #                ), None)
 
             if proceed and (
                 (event == 'first' and len(event_type)>1)
@@ -1240,11 +1233,11 @@ Baseline: {baseline}{" (including sub-threshold %s)" %sub_threshold_rebl if base
 Relapse influence (baseline): {relapse_to_bl} days\nRelapse influence (event): {relapse_to_event} days
 Relapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {event}
         ''')
-        print('---\nTotal subjects: %d\n---\nProgressed: %d (PIRA: %d; RAW: %d)'
+        print('---\nTotal subjects: %d\n---\nSubjects with disability worsening: %d (PIRA: %d; RAW: %d)'
               %(nsub, (summary['CDW']>0).sum(),
                 (summary['PIRA']>0).sum(), (summary['RAW']>0).sum()))
         if event not in ('firstCDW', 'firstCDWtype', 'firstPIRA', 'firstRAW'):
-            print('Improved: %d' %(summary['improvement']>0).sum())
+            print('Subjects with disability improvement: %d' %(summary['improvement']>0).sum())
         if event in ('multiple', 'firstCDWtype'):
             print('---\nCDW events: %d (PIRA: %d; RAW: %d)'
                   %(summary['CDW'].sum(),
