@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="pymsprog" href="modules.html" /><link rel="prev" title="Welcome to pymsprog’s documentation!" href="index.html" />
 
     <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
         <title>pymsprog: reproducible assessment of disability course in MS - pymsprog 1.0.0 documentation</title>
@@ -157,7 +157,11 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">pymsprog: reproducible assessment of disability course in MS</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="modules.html">pymsprog</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="pymsprog.html">pymsprog package</a></li>
@@ -222,7 +226,7 @@ appreciated!</p>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">#</a></h2>
 <p>You can install the latest release of <code class="docutils literal notranslate"><span class="pre">pymsprog</span></code>  with:</p>
-<div class="highlight-commandline notranslate"><div class="highlight"><pre><span></span>pip install pymsprog
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>pymsprog
 </pre></div>
 </div>
 <p>Alternatively, the development version can be downloaded from
@@ -230,15 +234,86 @@ appreciated!</p>
 </section>
 <section id="quickstart">
 <h2>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this heading">#</a></h2>
-<p>The core function of the package, <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>, detects disability events sequentially
+<p>The <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> function detects disability events sequentially
 by scanning the outcome values in chronological order.</p>
 <p>Let’s start by importing toy data and applying <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> to analyse EDSS course with
 the default settings.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pymsprog</span> <span class="kn">import</span> <span class="n">MSprog</span><span class="p">,</span> <span class="n">load_toy_data</span>
+
+<span class="c1"># Load toy data</span>
+<span class="n">toydata_visits</span><span class="p">,</span> <span class="n">toydata_relapses</span> <span class="o">=</span> <span class="n">load_toy_data</span><span class="p">()</span>
+
+<span class="n">toydata_visits</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">   id       date  EDSS  SDMT</span>
+<span class="sd">0   1 2021-09-23   4.5    50</span>
+<span class="sd">1   1 2021-11-03   4.5    50</span>
+<span class="sd">2   1 2022-01-19   4.5    51</span>
+<span class="sd">3   1 2022-04-27   4.5    57</span>
+<span class="sd">4   1 2022-07-12   5.5    55</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="n">toydata_relapses</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">   id       date</span>
+<span class="sd">0   2 2021-06-12</span>
+<span class="sd">1   2 2022-10-25</span>
+<span class="sd">2   3 2022-12-01</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="c1"># Detect events</span>
+<span class="n">summary</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span>                          <span class="c1"># insert data on visits</span>
+                 <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span>                         <span class="c1"># insert data on relapses</span>
+                 <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="c1"># specify column names </span>
+                 <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">)</span>                                   <span class="c1"># specify outcome type</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">---</span>
+<span class="sd">Outcome: EDSS</span>
+<span class="sd">Confirmation over: [84] days (-7 days, +730.5 days)</span>
+<span class="sd">Baseline: fixed</span>
+<span class="sd">Relapse influence (baseline): [30, 0] days</span>
+<span class="sd">Relapse influence (event): [0, 0] days</span>
+<span class="sd">Relapse influence (confirmation): [30, 0] days</span>
+<span class="sd">Events detected: firstCDW</span>
+<span class="sd">        </span>
+<span class="sd">---</span>
+<span class="sd">Total subjects: 6</span>
+<span class="sd">---</span>
+<span class="sd">Subjects with disability worsening: 3 (PIRA: 2; RAW: 1)</span>
+<span class="sd">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
 <p>Several qualitative and quantitative options for event detection are given as arguments that
 can be set by the user and reported as a complement to the results to ensure reproducibility.
 For example, instead of only detecting the first confirmed disability worsening (CDW) for
 each subject, we can detect <em>all</em> disability events sequentially by moving the baseline after
 each event (<code class="docutils literal notranslate"><span class="pre">event='multiple',</span> <span class="pre">baseline='roving'</span></code>)`:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">summary</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span>                          <span class="c1"># insert data on visits</span>
+                 <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span>                         <span class="c1"># insert data on relapses</span>
+                 <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="c1"># specify column names </span>
+                 <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>                                   <span class="c1"># specify outcome type</span>
+                 <span class="n">event</span><span class="o">=</span><span class="s1">&#39;multiple&#39;</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s1">&#39;roving&#39;</span><span class="p">)</span>              <span class="c1"># modify default settings</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">---</span>
+<span class="sd">Outcome: EDSS</span>
+<span class="sd">Confirmation over: [84] days (-7 days, +730.5 days)</span>
+<span class="sd">Baseline: roving</span>
+<span class="sd">Relapse influence (baseline): [30, 0] days</span>
+<span class="sd">Relapse influence (event): [0, 0] days</span>
+<span class="sd">Relapse influence (confirmation): [30, 0] days</span>
+<span class="sd">Events detected: multiple</span>
+<span class="sd">        </span>
+<span class="sd">---</span>
+<span class="sd">Total subjects: 6</span>
+<span class="sd">---</span>
+<span class="sd">Subjects with disability worsening: 4 (PIRA: 4; RAW: 1)</span>
+<span class="sd">Subjects with disability improvement: 2</span>
+<span class="sd">---</span>
+<span class="sd">CDW events: 5 (PIRA: 4; RAW: 1)</span>
+<span class="sd">Improvement events: 2</span>
+<span class="sd">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
 <p>The function prints out a concise report of the results, as well as
 <strong>the specific set of options used to obtain them</strong>.
 Complete results are stored in two <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> objects generated by the function call:</p>
@@ -262,7 +337,7 @@ the other columns count the events of each type.</p>
 <ol class="arabic simple" start="2">
 <li><p>Extended info on each event for all subjects:</p></li>
 </ol>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">   id  nevent event_type total_fu  time2event bl2event conf84 PIRA_conf84 sust_days sust_last</span>
 <span class="sd">0   1       1       PIRA      534         292    292.0      1           1       242         1</span>
@@ -292,8 +367,26 @@ the other columns count the events of each type.</p>
       <footer>
         
         <div class="related-pages">
-          
-          
+          <a class="next-page" href="modules.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">pymsprog</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Home</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">

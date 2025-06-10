@@ -29,7 +29,7 @@ appreciated!
 ## Installation
 
 You can install the latest release of `pymsprog`  with:
-```commandline
+```bash
 pip install pymsprog
 ```
 Alternatively, the development version can be downloaded from 
@@ -38,13 +38,13 @@ Alternatively, the development version can be downloaded from
 
 ## Quickstart
 
-The core function of the package, `MSprog()`, detects disability events sequentially 
+The `MSprog()` function detects disability events sequentially 
 by scanning the outcome values in chronological order. 
 
 Let's start by importing toy data and applying `MSprog()` to analyse EDSS course with 
 the default settings.
 
-```{python}
+```python
 from pymsprog import MSprog, load_toy_data
 
 # Load toy data
@@ -96,7 +96,7 @@ For example, instead of only detecting the first confirmed disability worsening 
 each subject, we can detect *all* disability events sequentially by moving the baseline after
 each event (`event='multiple', baseline='roving'`)`:
 
-```{python}
+```python
 summary, results = MSprog(toydata_visits,                          # insert data on visits
                  relapse=toydata_relapses,                         # insert data on relapses
                  subj_col='id', value_col='EDSS', date_col='date', # specify column names 
@@ -145,7 +145,7 @@ where: `event_sequence` specifies the order of the events;
 the other columns count the events of each type.
     
 2. Extended info on each event for all subjects:
-```
+```python
 print(results)
 '''
    id  nevent event_type total_fu  time2event bl2event conf84 PIRA_conf84 sust_days sust_last
