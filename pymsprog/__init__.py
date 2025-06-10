@@ -47,7 +47,6 @@ def load_toy_data():
 
     Examples
     --------
-    >>> from pymsprog import load_toy_data
     >>> visits, relapses = load_toy_data()
     >>> visits.head()
     >>> relapses.head()
@@ -133,9 +132,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         Name of data column with alternative outcome value to use as baseline for delta function.
         It may be used, for instance, when analysing *partial* disability trajectories extracted
         using :func:`separate_ri_ra()`.
-        Example:
-        Original trajectory: EDSS = 3, 3.5, 5.5, 5, 5, 5.5, 6
-        Relapse-independent trajectory: RIEDSS = 3, 3.5, 3.5, 3.5, 3.5, 4, 4.5 (obtained using :func:`separate_ri_ra()`)
+        Example:\n
+        Original trajectory: EDSS = 3, 3.5, 5.5, 5, 5, 5.5, 6\n
+        Relapse-independent trajectory: RIEDSS = 3, 3.5, 3.5, 3.5, 3.5, 4, 4.5 (obtained using :func:`separate_ri_ra()`)\n
         To extract progression events from the relapse-independent trajectory, the delta function should be referred
         to the original EDSS values (e.g., the worsening of 0.5 from 4 to 4.5 should be considered valid because
         the actual disability score of the patient went from 5.5 to 6).
@@ -346,9 +345,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
     Examples
     --------
-    # 1. EDSS course
-    # >>> summary, results = MSprog(...)
-    # output
+    >>> toydata_visits, toydata_relapses = load_toy_data()
+    >>> # 1. EDSS course
+    >>> summary, results = MSprog(toydata_visits, relapse=toydata_relapses, subj_col='id', value_col='EDSS', date_col='date', outcome='edss')
+    >>> # 1. SDMT course
+    >>> summary, results = MSprog(toydata_visits, relapse=toydata_relapses, subj_col='id', value_col='EDSS', date_col='date', outcome='sdmt')
 
     '''
 
@@ -1450,7 +1451,7 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
 
     Returns
     -------
-    DataFrame
+    pandas.DataFrame
         Including columns:
 
         - ``date_col`` -- date of first reaching value >=milestone (or last date of follow-up if milestone is not reached);
@@ -1467,9 +1468,6 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
     ------
     ValueError
         If the arguments are incorrectly specified.
-
-    Examples
-    --------
 
     '''
 
@@ -1801,9 +1799,6 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
     ------
     ValueError
         If the arguments are incorrectly specified.
-
-    Examples
-    --------
 
     '''
 

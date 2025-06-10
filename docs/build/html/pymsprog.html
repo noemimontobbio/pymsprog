@@ -157,7 +157,11 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">pymsprog: reproducible assessment of disability course in MS</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">pymsprog</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">pymsprog package</a></li>
@@ -240,16 +244,17 @@ in order to use the built-in function <a class="reference internal" href="#pymsp
 <li><p><strong>worsening</strong> (<em>str</em>) – The direction of worsening (‘increase’ if higher values correspond to worse disease course, ‘decrease’ otherwise).
 This argument is only used when <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to None. Otherwise, <code class="docutils literal notranslate"><span class="pre">worsening</span></code> is automatically set to
 ‘increase’ if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘edss’, ‘nhpt’, ‘t25fw’, and to ‘decrease’ if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘sdmt’.</p></li>
-<li><p><strong>valuedelta_col</strong> (<em>str</em>) – Name of data column with alternative outcome value to use as baseline for delta function.
+<li><p><strong>valuedelta_col</strong> (<em>str</em>) – <p>Name of data column with alternative outcome value to use as baseline for delta function.
 It may be used, for instance, when analysing <em>partial</em> disability trajectories extracted
 using <a class="reference internal" href="#pymsprog.separate_ri_ra" title="pymsprog.separate_ri_ra"><code class="xref py py-func docutils literal notranslate"><span class="pre">separate_ri_ra()</span></code></a>.
-Example:
-Original trajectory: EDSS = 3, 3.5, 5.5, 5, 5, 5.5, 6
-Relapse-independent trajectory: RIEDSS = 3, 3.5, 3.5, 3.5, 3.5, 4, 4.5 (obtained using <a class="reference internal" href="#pymsprog.separate_ri_ra" title="pymsprog.separate_ri_ra"><code class="xref py py-func docutils literal notranslate"><span class="pre">separate_ri_ra()</span></code></a>)
-To extract progression events from the relapse-independent trajectory, the delta function should be referred
+Example:</p>
+<p>Original trajectory: EDSS = 3, 3.5, 5.5, 5, 5, 5.5, 6</p>
+<p>Relapse-independent trajectory: RIEDSS = 3, 3.5, 3.5, 3.5, 3.5, 4, 4.5 (obtained using <a class="reference internal" href="#pymsprog.separate_ri_ra" title="pymsprog.separate_ri_ra"><code class="xref py py-func docutils literal notranslate"><span class="pre">separate_ri_ra()</span></code></a>)</p>
+<p>To extract progression events from the relapse-independent trajectory, the delta function should be referred
 to the original EDSS values (e.g., the worsening of 0.5 from 4 to 4.5 should be considered valid because
 the actual disability score of the patient went from 5.5 to 6).
-In such a case, <a class="reference internal" href="#pymsprog.MSprog" title="pymsprog.MSprog"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSprog()</span></code></a> should be used with <code class="docutils literal notranslate"><span class="pre">value_col='RIEDSS'</span></code> and <code class="docutils literal notranslate"><span class="pre">valuedelta_col='EDSS'</span></code>.</p></li>
+In such a case, <a class="reference internal" href="#pymsprog.MSprog" title="pymsprog.MSprog"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSprog()</span></code></a> should be used with <code class="docutils literal notranslate"><span class="pre">value_col='RIEDSS'</span></code> and <code class="docutils literal notranslate"><span class="pre">valuedelta_col='EDSS'</span></code>.</p>
+</p></li>
 <li><p><strong>event</strong> (<em>str</em>) – <p>Specifies which events to detect. Must be one of the following.</p>
 <ul>
 <li><p>’firstCDW’ (first confirmed disability worsening (CDW), default);</p></li>
@@ -425,9 +430,13 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<p># 1. EDSS course
-# &gt;&gt;&gt; summary, results = MSprog(…)
-# output</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">toydata_visits</span><span class="p">,</span> <span class="n">toydata_relapses</span> <span class="o">=</span> <span class="n">load_toy_data</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># 1. EDSS course</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">summary</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span> <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span> <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># 1. SDMT course</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">summary</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span> <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span> <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;sdmt&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -506,8 +515,7 @@ The <code class="docutils literal notranslate"><span class="pre">visits</span></
 <li><p><code class="docutils literal notranslate"><span class="pre">date</span></code>: relapse onset date.</p></li>
 </ul>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pymsprog</span> <span class="kn">import</span> <span class="n">load_toy_data</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">visits</span><span class="p">,</span> <span class="n">relapses</span> <span class="o">=</span> <span class="n">load_toy_data</span><span class="p">()</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">visits</span><span class="p">,</span> <span class="n">relapses</span> <span class="o">=</span> <span class="n">load_toy_data</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">visits</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">relapses</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
@@ -642,7 +650,6 @@ with the available data.</p>
 <dd class="field-odd"><p><strong>ValueError</strong> – If the arguments are incorrectly specified.</p>
 </dd>
 </dl>
-<p class="rubric">Examples</p>
 </dd></dl>
 
 <dl class="py function">
@@ -697,7 +704,7 @@ Note that setting the distance to zero means using any visit for confirmation re
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>DataFrame</p>
+<dd class="field-odd"><p>pandas.DataFrame</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -710,7 +717,6 @@ Valid time windows for confirmation visits are determined by arguments
 <dd class="field-odd"><p><strong>ValueError</strong> – If the arguments are incorrectly specified.</p>
 </dd>
 </dl>
-<p class="rubric">Examples</p>
 </dd></dl>
 
 </section>

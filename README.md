@@ -1,3 +1,9 @@
+<br/>
+
+> 🚧 **This repository is under active development. 
+> Please make sure you are using the latest version of the library – or at least v1.0.0, 
+> which is functionally stable, though some minor aspects may still change ahead of a full 
+> stable release.** 🚧
 
 # pymsprog: reproducible assessment of disability course in MS
 
