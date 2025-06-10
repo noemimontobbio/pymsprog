@@ -1,5 +1,9 @@
 
-# pymsprog: reproducible assessment of disability progression in MS
+# pymsprog: reproducible assessment of disability course in MS
+
+<p align="center">
+  <img src="docs/source/_static/logo_py.png" width="200"/>
+</p>
 
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)
 
@@ -10,7 +14,8 @@ analysis of disability course in multiple sclerosis (MS) from longitudinal data.
 An [R version](https://github.com/noemimontobbio/msprog) of the library is available as well.
 
 Its core function, `MSprog()`, detects and characterises the evolution
-of an outcome measure (EDSS, NHPT, T25FW, SDMT; or any custom outcome
+of an outcome measure (Expanded Disability Status Scale, EDSS; Nine-Hole Peg Test, NHPT;
+Timed 25-Foot Walk, T25FW; Symbol Digit Modalities Test, SDMT; or any custom outcome
 measure) for one or more subjects, based on repeated assessments through
 time and on the dates of acute episodes (if any).
 
@@ -19,10 +24,7 @@ The dataset contains artificially generated Extended Disability Status Scale (ED
 Symbol Digit Modalities Test (SDMT) longidutinal scores, visit dates, and relapse onset dates
 in a small cohort of example patients.
 
-Please refer to the [documentation](https://pymsprog.readthedocs.io) for function usage and data structure. 
-Detailed tutorials providing examples and best-practice tips are also available.
-
-**If you use this package in your work, please cite the following work:**<br />
+**If you use this package in your work, please cite as follows:**<br />
 Montobbio N, Carmisciano L, Signori A, et al. 
 *Creating an automated tool for a consistent and repeatable evaluation of disability progression 
 in clinical studies for multiple sclerosis.* 
@@ -42,29 +44,73 @@ Alternatively, the development version can be downloaded from
 [GitHub](https://github.com/noemimontobbio/pymsprog).
 
 
-## Usage
+## Quickstart
 
-`MSprog()` detects disability events sequentially by scanning the outcome values in chronological order. 
+The core function of the package, `MSprog()`, detects disability events sequentially 
+by scanning the outcome values in chronological order. 
 
-Several qualitative and quantitative options for event detection are given as arguments that 
-can be set by the user and reported as a complement to the results to ensure reproducibility. 
-
-The example below illustrates the function's usage and output:
+Let's start by importing toy data and applying `MSprog()` to analyse EDSS course with 
+the default settings.
 
 ```{python}
 from pymsprog import MSprog, load_toy_data
-import pandas as pd
 
 # Load toy data
 toydata_visits, toydata_relapses = load_toy_data()
+
+toydata_visits.head()
+'''
+   id       date  EDSS  SDMT
+0   1 2021-09-23   4.5    50
+1   1 2021-11-03   4.5    50
+2   1 2022-01-19   4.5    51
+3   1 2022-04-27   4.5    57
+4   1 2022-07-12   5.5    55
+'''
+
+toydata_relapses.head()
+'''
+   id       date
+0   2 2021-06-12
+1   2 2022-10-25
+2   3 2022-12-01
+'''
 
 # Detect events
 summary, results = MSprog(toydata_visits,                          # insert data on visits
                  relapse=toydata_relapses,                         # insert data on relapses
                  subj_col='id', value_col='EDSS', date_col='date', # specify column names 
-                 outcome='edss',                                   # specify outcome type
-                 event='multiple', baseline='roving')              # modify default options on event detection)
+                 outcome='edss')                                   # specify outcome type
+'''
+---
+Outcome: EDSS
+Confirmation over: [84] days (-7 days, +730.5 days)
+Baseline: fixed
+Relapse influence (baseline): [30, 0] days
+Relapse influence (event): [0, 0] days
+Relapse influence (confirmation): [30, 0] days
+Events detected: firstCDW
+        
+---
+Total subjects: 6
+---
+Subjects with disability worsening: 3 (PIRA: 2; RAW: 1)
+'''
+```
 
+Several qualitative and quantitative options for event detection are given as arguments that 
+can be set by the user and reported as a complement to the results to ensure reproducibility. 
+For example, instead of only detecting the first confirmed disability worsening (CDW) for 
+each subject, we can detect *all* disability events sequentially by moving the baseline after
+each event (`event='multiple', baseline='roving'`)`:
+
+```{python}
+summary, results = MSprog(toydata_visits,                          # insert data on visits
+                 relapse=toydata_relapses,                         # insert data on relapses
+                 subj_col='id', value_col='EDSS', date_col='date', # specify column names 
+                 outcome='edss',                                   # specify outcome type
+                 event='multiple', baseline='roving')              # modify default settings
+'''
 ---
 Outcome: EDSS
 Confirmation over: [84] days (-7 days, +730.5 days)
@@ -75,27 +121,32 @@ Relapse influence (confirmation): [30, 0] days
 Events detected: multiple
         
 ---
-Total subjects: 4
+Total subjects: 6
 ---
-Progressed: 3 (PIRA: 3; RAW: 1)
-Improved: 1
+Subjects with disability worsening: 4 (PIRA: 4; RAW: 1)
+Subjects with disability improvement: 2
 ---
-CDW events: 4 (PIRA: 3; RAW: 1)
-Improvement events: 1
+CDW events: 5 (PIRA: 4; RAW: 1)
+Improvement events: 2
+'''
 ```
-
 
 The function prints out a concise report of the results, as well as 
 **the specific set of options used to obtain them**. 
 Complete results are stored in two `pandas.DataFrame` objects generated by the function call:
 
 1. A summary table providing the event count for each subject and event type:
-```
+```python
+print(summary)
+'''
   event_sequence  improvement  CDW  RAW  PIRA  undefined_CDW
-            PIRA            0    1    0     1              0
-       RAW, PIRA            0    2    1     1              0
-                            0    0    0     0              0
-      impr, PIRA            1    1    0     1              0
+1           PIRA            0    1    0     1              0
+2      RAW, PIRA            0    2    1     1              0
+3                           0    0    0     0              0
+4     impr, PIRA            1    1    0     1              0
+5           PIRA            0    1    0     1              0
+6           impr            1    0    0     0              0
+'''
 ```
 
 where: `event_sequence` specifies the order of the events; 
@@ -103,17 +154,26 @@ the other columns count the events of each type.
     
 2. Extended info on each event for all subjects:
 ```
-   id  nevent event_type total_fu time2event conf84  PIRA_conf84 sust_days sust_last
-    1       1       PIRA      534        292      1            1       242         1
-    2       1        RAW      730        198      1          None        84         0
-    2       2       PIRA      730        539      1             1       191         1
-    3       0       None      491        491   None          None      None      None
-    4       1       impr      586         77      1          None        98         0
-    4       2       PIRA      586        304      1             1       282         1
+print(results)
+'''
+   id  nevent event_type total_fu  time2event bl2event conf84 PIRA_conf84 sust_days sust_last
+0   1       1       PIRA      534         292    292.0      1           1       242         1
+1   2       1        RAW      730         198    198.0      1        None        84         0
+2   2       2       PIRA      730         539    257.0      1           1       191         1
+3   3       0       None      491         491     None   None        None      None      None
+4   4       1       impr      586          77     77.0      1        None        98         0
+5   4       2       PIRA      586         304    129.0      1           1       282         1
+6   5       1       PIRA      637         140    140.0      1           1       497         1
+7   6       1       impr      491         120    120.0      1        None       232         0
+'''
 ```
 
 where: `nevent` is the cumulative event count for each subject; `event_type` characterises the event; 
-`time2event` is the number of days from baseline to event; `conf84` reports whether the event was 
-confirmed over 84 days (12 weeks); `sust_days` is the number of days for which the event was sustained; 
+`total_fu` is the total follow-up period of the subject in days;
+`time2event` is the number of days from the beginning of the follow-up to the event 
+(coincides with length of follow-up if no event is detected); 
+`bl2event` is the number of days from the current baseline to the event; 
+`conf84` reports whether the event was confirmed over 84 days (12 weeks); 
+`sust_days` is the number of days for which the event was sustained; 
 `sust_last` reports whether the event was sustained until the last visit.
 

@@ -542,7 +542,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                        + ['conf'+str(m) for m in conf_days]+ ['PIRA_conf'+str(m) for m in conf_days]
                        + ['sust_days', 'sust_last'])
     results[subj_col] = np.repeat(all_subj, max_nevents)
-    results['nevent'] = np.tile(np.arange(1,max_nevents+1), nsub)
+    results['nevent'] = np.tile(np.arange(1, max_nevents + 1), nsub)
     summary = pd.DataFrame([['']+[0]*5]*nsub, columns=['event_sequence', 'improvement', 'CDW',
                                                   'RAW', 'PIRA', 'undefined_CDW'], index=all_subj)
     total_fu = {s : 0 for s in all_subj}

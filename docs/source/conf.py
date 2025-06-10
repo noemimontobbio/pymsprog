@@ -40,4 +40,9 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"            # "alabaster", or "sphinx_rtd_theme", or "furo", etc.
+
 html_static_path = ['_static']
+
+# Logo setup
+
+html_logo = "_static/logo_py.png"
