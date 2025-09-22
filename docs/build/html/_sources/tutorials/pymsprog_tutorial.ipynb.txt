@@ -17,16 +17,8 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "####\n",
-    "import sys\n",
-    "sys.path.insert(0, '../../../')\n",
-    "####\n",
-    "\n",
-    "from pymsprog import MSprog, compute_delta, load_toy_data\n",
-    "\n",
-    "####\n",
-    "sys.path = sys.path[1:]\n",
-    "####"
+    "import pymsprog\n",
+    "print(pymsprog.__version__)"
    ]
   },
   {
@@ -88,6 +80,7 @@
     }
    ],
    "source": [
+    "from pymsprog import load_toy_data\n",
     "toydata_visits, toydata_relapses = load_toy_data()\n",
     "\n",
     "print('\\nVisits:')\n",
@@ -137,6 +130,7 @@
     }
    ],
    "source": [
+    "from pymsprog import MSprog\n",
     "summary_edss, results_edss = MSprog(toydata_visits,  # data on visits\n",
     "                         subj_col='id', value_col='EDSS', date_col='date',  # specify column names\n",
     "                         outcome='edss',  # specify outcome type <--- EDSS\n",
@@ -192,8 +186,7 @@
    "id": "2d860cc9",
    "metadata": {},
    "source": [
-    "<br/>\n",
-    "The function prints concise info (the `verbose` argument can be used to control the amount of info printed out -- see [the relevant section](#Printing-progress-info)), and generates the following two `DataFrame`s:\n",
+    "The function prints concise info (the `verbose` argument can be used to control the amount of info printed out -- see [Printing progress info](#printing-progress-info) section below), and generates the following two `DataFrame`s:\n",
     "\n",
     "<br />\n",
     "\n",
@@ -324,6 +317,7 @@
     }
    ],
    "source": [
+    "from pymsprog import compute_delta\n",
     "print(compute_delta(4)) # default outcome measure is 'edss'"
    ]
   },

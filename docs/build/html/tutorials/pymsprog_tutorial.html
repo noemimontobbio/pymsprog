@@ -7,7 +7,7 @@
         <link rel="prefetch" href="../_static/logo_py.png" as="image" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2025.07.19 -->
-        <title>Analysing disability course in MS - pymsprog 1.0.0 documentation</title>
+        <title>Analysing disability course in MS - pymsprog 1.0.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css?v=6644e6bb" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">pymsprog 1.0.0 documentation</div></a>
+      <a href="../index.html"><div class="brand">pymsprog 1.0.2 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -194,7 +194,7 @@
     <img class="sidebar-logo" src="../_static/logo_py.png" alt="Logo"/>
   </div>
   
-  <span class="sidebar-brand-text">pymsprog 1.0.0 documentation</span>
+  <span class="sidebar-brand-text">pymsprog 1.0.2 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -261,16 +261,13 @@
 <p>This tutorial illustrates how to use the <code class="docutils literal notranslate"><span class="pre">pymsprog</span></code> package to study the evolution of disability in multiple sclerosis (MS) based on repeated assessments through time of an outcome measure (EDSS, NHPT, T25FW, SDMT; or any custom outcome measure). We’ll start by illustrating the type of <a class="reference internal" href="#input-data">input data</a> needed, and by giving a <a class="reference internal" href="#minimal-example">minimal working example</a> to introduce the main function and facilitate the reading of the document. We’ll then move on to a more detailed description of the different parameter configurations.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">####</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;../../../&#39;</span><span class="p">)</span>
-<span class="c1">####</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">pymsprog</span><span class="w"> </span><span class="kn">import</span> <span class="n">MSprog</span><span class="p">,</span> <span class="n">compute_delta</span><span class="p">,</span> <span class="n">load_toy_data</span>
-
-<span class="c1">####</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-<span class="c1">####</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pymsprog</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pymsprog</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.0.2
 </pre></div>
 </div>
 </div>
@@ -292,7 +289,8 @@
 <p>In this tutorial, we will use toy data with artificially generated EDSS and SDMT assessments and relapse dates for a few hypothetical patients:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">toydata_visits</span><span class="p">,</span> <span class="n">toydata_relapses</span> <span class="o">=</span> <span class="n">load_toy_data</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pymsprog</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_toy_data</span>
+<span class="n">toydata_visits</span><span class="p">,</span> <span class="n">toydata_relapses</span> <span class="o">=</span> <span class="n">load_toy_data</span><span class="p">()</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Visits:&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">toydata_visits</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
@@ -303,19 +301,19 @@
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Visits:
-   id       date  EDSS  SDMT
-0   1 2021-09-23   4.5    54
-1   1 2021-11-03   4.5    54
-2   1 2022-01-19   4.5    57
-3   1 2022-04-27   4.5    55
-4   1 2022-07-12   5.5    57
+   id        date  EDSS  SDMT
+0   1  2021-09-23   4.5    54
+1   1  2021-11-03   4.5    54
+2   1  2022-01-19   4.5    57
+3   1  2022-04-27   4.5    55
+4   1  2022-07-12   5.5    57
 
 Relapses:
-   id       date
-0   2 2021-06-12
-1   2 2022-10-25
-2   3 2022-12-01
-3   6 2022-12-18
+   id        date
+0   2  2021-06-12
+1   2  2022-10-25
+2   3  2022-12-01
+3   6  2022-12-18
 </pre></div>
 </div>
 </div>
@@ -326,7 +324,8 @@ Relapses:
 <p>The core block of <code class="docutils literal notranslate"><span class="pre">pymsprog</span></code> is the <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> function. Given data on visits and relapses in the form specified above, <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> analyses the disability evolution for each subject for the outcome of interest. We can test it on the EDSS toy data…</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">summary_edss</span><span class="p">,</span> <span class="n">results_edss</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span>  <span class="c1"># data on visits</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pymsprog</span><span class="w"> </span><span class="kn">import</span> <span class="n">MSprog</span>
+<span class="n">summary_edss</span><span class="p">,</span> <span class="n">results_edss</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span>  <span class="c1"># data on visits</span>
                          <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span>  <span class="c1"># specify column names</span>
                          <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>  <span class="c1"># specify outcome type &lt;--- EDSS</span>
                          <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">)</span> <span class="c1"># data on relapses</span>
@@ -379,8 +378,7 @@ Subjects with disability worsening: 2 (PIRA: 2; RAW: 0)
 </div>
 </div>
 </div>
-<br/>
-The function prints concise info (the `verbose` argument can be used to control the amount of info printed out -- see [the relevant section](#Printing-progress-info)), and generates the following two `DataFrame`s:
+<p>The function prints concise info (the <code class="docutils literal notranslate"><span class="pre">verbose</span></code> argument can be used to control the amount of info printed out – see <a class="reference internal" href="#printing-progress-info">Printing progress info</a> section below), and generates the following two <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s:</p>
 <br />
 <ol class="arabic simple">
 <li><p>event counts and event sequence (where relevant) for each subject. Here’s what it looks like for the EDSS-based computation above:</p></li>
@@ -451,7 +449,8 @@ The function prints concise info (the `verbose` argument can be used to control 
 <p>These default options are internally implemented by the <code class="docutils literal notranslate"><span class="pre">compute_delta()</span></code> function. For example, if the baseline EDSS score is 4, a valid worsening will correspond to an increase by (at least):</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">compute_delta</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span> <span class="c1"># default outcome measure is &#39;edss&#39;</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pymsprog</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_delta</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">compute_delta</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span> <span class="c1"># default outcome measure is &#39;edss&#39;</span>
 </pre></div>
 </div>
 </div>
@@ -541,16 +540,16 @@ DEFAULT minimum valid change from baseline SDMT=50:  3
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data:
-        date  EDSS
-0 2021-06-14   4.0
-1 2021-09-12   4.0
-2 2021-11-01   5.0
-3 2022-01-17   5.5
-4 2022-04-30   5.0
-5 2022-07-06   5.5
-6 2022-11-09   5.5
-7 2022-12-15   5.0
-8 2023-03-13   5.5
+         date  EDSS
+0  2021-06-14   4.0
+1  2021-09-12   4.0
+2  2021-11-01   5.0
+3  2022-01-17   5.5
+4  2022-04-30   5.0
+5  2022-07-06   5.5
+6  2022-11-09   5.5
+7  2022-12-15   5.0
+8  2023-03-13   5.5
 
 ---Results with fixed baseline:---
 nevent                         1                    2                    3
@@ -657,22 +656,22 @@ i.e., the confirmation visit must lie between 24 weeks after the event, and 36 w
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Visits:
-        date  EDSS
-0 2020-11-26   4.0
-1 2020-12-30   4.0
-2 2021-03-24   4.5
-3 2021-06-12   5.5
-4 2021-09-04   5.0
-5 2021-12-02   4.5
-6 2022-02-23   4.5
-7 2022-05-19   6.0
-8 2022-08-28   6.0
-9 2022-11-26   6.0
+         date  EDSS
+0  2020-11-26   4.0
+1  2020-12-30   4.0
+2  2021-03-24   4.5
+3  2021-06-12   5.5
+4  2021-09-04   5.0
+5  2021-12-02   4.5
+6  2022-02-23   4.5
+7  2022-05-19   6.0
+8  2022-08-28   6.0
+9  2022-11-26   6.0
 
 Relapses:
-   id       date
-0   2 2021-06-12
-1   2 2022-10-25
+   id        date
+0   2  2021-06-12
+1   2  2022-10-25
 </pre></div>
 </div>
 </div>
@@ -1159,7 +1158,7 @@ Improvement events: 2
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=8d563738"></script>
+</div><script src="../_static/documentation_options.js?v=1ed6394b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

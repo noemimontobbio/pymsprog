@@ -14,7 +14,7 @@
 
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)
 
-[📖 **Documentation**](https://pymsprog.readthedocs.io)
+[📖 **Documentation and TUTORIALS**](https://pymsprog.readthedocs.io)
 
 `pymsprog` is a Python package providing tools for exhaustive and reproducible
 analysis of disability course in multiple sclerosis (MS) from longitudinal data. 
