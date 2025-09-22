@@ -3,3 +3,4 @@
 myst-nb
 sphinxcontrib-bibtex
 furo
+markdown-it-py
