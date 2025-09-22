@@ -2,6 +2,15 @@
 
 ---
 
+# 1.0.1 — 2025-09-22
+
+Align with msprog R package.
+
+### Changed
+- Functions MSprog(), separate_ri_ra(), value_milestone(), is_event(), load_toy_data()
+
+---
+
 # 1.0.0 — 2025-06-08
 
 Align with msprog R package.

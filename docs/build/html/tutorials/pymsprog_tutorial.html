@@ -1,0 +1,1169 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="pymsprog" href="../modules.html" /><link rel="prev" title="pymsprog: reproducible assessment of disability course in MS" href="../introduction.html" />
+        <link rel="prefetch" href="../_static/logo_py.png" as="image" />
+
+    <!-- Generated with Sphinx 8.1.3 and Furo 2025.07.19 -->
+        <title>Analysing disability course in MS - pymsprog 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css?v=6644e6bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">pymsprog 1.0.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo_py.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">pymsprog 1.0.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">pymsprog: reproducible assessment of disability course in MS</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Analysing disability course in MS</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../modules.html">pymsprog</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of pymsprog</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../pymsprog.html">pymsprog package</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/tutorials/pymsprog_tutorial.ipynb.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section class="tex2jax_ignore mathjax_ignore" id="analysing-disability-course-in-ms">
+<h1>Analysing disability course in MS<a class="headerlink" href="#analysing-disability-course-in-ms" title="Link to this heading">¶</a></h1>
+<p>This tutorial illustrates how to use the <code class="docutils literal notranslate"><span class="pre">pymsprog</span></code> package to study the evolution of disability in multiple sclerosis (MS) based on repeated assessments through time of an outcome measure (EDSS, NHPT, T25FW, SDMT; or any custom outcome measure). We’ll start by illustrating the type of <a class="reference internal" href="#input-data">input data</a> needed, and by giving a <a class="reference internal" href="#minimal-example">minimal working example</a> to introduce the main function and facilitate the reading of the document. We’ll then move on to a more detailed description of the different parameter configurations.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">####</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;../../../&#39;</span><span class="p">)</span>
+<span class="c1">####</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymsprog</span><span class="w"> </span><span class="kn">import</span> <span class="n">MSprog</span><span class="p">,</span> <span class="n">compute_delta</span><span class="p">,</span> <span class="n">load_toy_data</span>
+
+<span class="c1">####</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+<span class="c1">####</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="input-data">
+<span id="id1"></span><h2>Input data<a class="headerlink" href="#input-data" title="Link to this heading">¶</a></h2>
+<p>The data must be organised in a <code class="docutils literal notranslate"><span class="pre">pandas</span></code> <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> containing (at least) the following columns:</p>
+<ul class="simple">
+<li><p>Subject IDs;</p></li>
+<li><p>Visit dates;</p></li>
+<li><p>Outcome values.</p></li>
+</ul>
+<p>The visits should be listed in chronological order (if they are not, <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> will sort them automatically before analysing them).</p>
+<p>For relapsing-remitting MS patients, an additional <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> with the dates of relapses is needed to correctly assess progression and characterise progression events as relapse-associated or relapse-independent. The dataset should contain (at least) the following columns:</p>
+<ul class="simple">
+<li><p>Subject IDs;</p></li>
+<li><p>Visit dates.</p></li>
+</ul>
+<p>In this tutorial, we will use toy data with artificially generated EDSS and SDMT assessments and relapse dates for a few hypothetical patients:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">toydata_visits</span><span class="p">,</span> <span class="n">toydata_relapses</span> <span class="o">=</span> <span class="n">load_toy_data</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Visits:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">toydata_visits</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Relapses:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">toydata_relapses</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Visits:
+   id       date  EDSS  SDMT
+0   1 2021-09-23   4.5    54
+1   1 2021-11-03   4.5    54
+2   1 2022-01-19   4.5    57
+3   1 2022-04-27   4.5    55
+4   1 2022-07-12   5.5    57
+
+Relapses:
+   id       date
+0   2 2021-06-12
+1   2 2022-10-25
+2   3 2022-12-01
+3   6 2022-12-18
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="minimal-example">
+<span id="id2"></span><h2>Minimal example<a class="headerlink" href="#minimal-example" title="Link to this heading">¶</a></h2>
+<p>The core block of <code class="docutils literal notranslate"><span class="pre">pymsprog</span></code> is the <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> function. Given data on visits and relapses in the form specified above, <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> analyses the disability evolution for each subject for the outcome of interest. We can test it on the EDSS toy data…</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">summary_edss</span><span class="p">,</span> <span class="n">results_edss</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span>  <span class="c1"># data on visits</span>
+                         <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span>  <span class="c1"># specify column names</span>
+                         <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>  <span class="c1"># specify outcome type &lt;--- EDSS</span>
+                         <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">)</span> <span class="c1"># data on relapses</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>---
+Outcome: EDSS
+Confirmation over: [84] days (-7 days, +730.5 days)
+Baseline: fixed
+Relapse influence (baseline): [30, 0] days
+Relapse influence (event): [0, 0] days
+Relapse influence (confirmation): [30, 0] days
+Events detected: firstCDW
+        
+---
+Total subjects: 6
+---
+Subjects with disability worsening: 3 (PIRA: 2; RAW: 1)
+</pre></div>
+</div>
+</div>
+</div>
+<p>…or on the SDMT toy data:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">summary_sdmt</span><span class="p">,</span> <span class="n">results_sdmt</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span>  <span class="c1"># data on visits</span>
+                         <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span>  <span class="c1"># specify column names</span>
+                         <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;sdmt&#39;</span><span class="p">,</span>  <span class="c1"># specify outcome type &lt;--- SDMT</span>
+                         <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">)</span> <span class="c1"># data on relapses</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>---
+Outcome: SDMT
+Confirmation over: [84] days (-7 days, +730.5 days)
+Baseline: fixed
+Relapse influence (baseline): [30, 0] days
+Relapse influence (event): [0, 0] days
+Relapse influence (confirmation): [30, 0] days
+Events detected: firstCDW
+        
+---
+Total subjects: 6
+---
+Subjects with disability worsening: 2 (PIRA: 2; RAW: 0)
+</pre></div>
+</div>
+</div>
+</div>
+<br/>
+The function prints concise info (the `verbose` argument can be used to control the amount of info printed out -- see [the relevant section](#Printing-progress-info)), and generates the following two `DataFrame`s:
+<br />
+<ol class="arabic simple">
+<li><p>event counts and event sequence (where relevant) for each subject. Here’s what it looks like for the EDSS-based computation above:</p></li>
+</ol>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">summary_edss</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  event_sequence  CDW  RAW  PIRA  undef_CDW
+1           PIRA    1    0     1          0
+2            RAW    1    1     0          0
+3                   0    0     0          0
+4                   0    0     0          0
+5           PIRA    1    0     1          0
+6                   0    0     0          0
+</pre></div>
+</div>
+</div>
+</div>
+<p>where: <code class="docutils literal notranslate"><span class="pre">event_sequence</span></code> where: <code class="docutils literal notranslate"><span class="pre">event_sequence</span></code>(*) specifies the order of the events; the other columns count the events of each kind (improvement; relapse-associated worsening, <a class="reference internal" href="#raw">RAW</a>; progression independent of relapse activity, <a class="reference internal" href="#pira">PIRA</a>; and worsening that could not be classified as either RAW of PIRA with the available information). See <span id="id3">Kappos <em>et al.</em> [<a class="reference internal" href="#id35" title="Ludwig Kappos, Helmut Butzkueven, Heinz Wiendl, Timothy Spelman, Fabio Pellegrini, Yi Chen, Qunming Dong, Harold Koendgen, Shibeshih Belachew, Maria Trojano, and On Behalf of the Tysabri® Observational Program (TOP) Investigators. Greater sensitivity to multiple sclerosis disability worsening and progression events using a roving versus a fixed reference value in a prospective cohort study. Multiple Sclerosis Journal, 24(7):963-973, 2018. PMID: 28554238. URL: https://doi.org/10.1177/1352458517709619, arXiv:https://doi.org/10.1177/1352458517709619, doi:10.1177/1352458517709619.">2018</a>], Lublin <em>et al.</em> [<a class="reference internal" href="#id36" title="Fred D. Lublin, Stephen C. Reingold, Jeffrey A. Cohen, Gary R. Cutter, Per Soelberg Sørensen, Alan J. Thompson, Jerry S. Wolinsky, Laura J. Balcer, Brenda Banwell, Frederik Barkhof, Jr Bruce Bebo, Peter A. Calabresi, Michel Clanet, Giancarlo Comi, Robert J. Fox, Mark S. Freedman, Andrew D. Goodman, Matilde Inglese, Ludwig Kappos, Bernd C. Kieseier, John A. Lincoln, Catherine Lubetzki, Aaron E. Miller, Xavier Montalban, Paul W. O\textquoteright Connor, John Petkau, Carlo Pozzilli, Richard A. Rudick, Maria Pia Sormani, Olaf Stüve, Emmanuelle Waubant, and Chris H. Polman. Defining the clinical course of multiple sclerosis. Neurology, 83(3):278–286, 2014. URL: https://n.neurology.org/content/83/3/278, arXiv:https://n.neurology.org/content/83/3/278.full.pdf, doi:10.1212/WNL.0000000000000560.">2014</a>]</span>.</p>
+<p>(*) In this example, <code class="docutils literal notranslate"><span class="pre">event_sequence</span></code> can contain a maximum of one event, as we are not specifying the argument <code class="docutils literal notranslate"><span class="pre">event</span></code> - which defaults to <code class="docutils literal notranslate"><span class="pre">firstCDW</span></code> (only detect the first CDW event). For the same reason, <code class="docutils literal notranslate"><span class="pre">nevent</span></code> in <code class="docutils literal notranslate"><span class="pre">output$results</span></code> can only be 0 or 1 in this example. In a multiple-event setting (<code class="docutils literal notranslate"><span class="pre">event=multiple</span></code>), more than one event per subject can be detected. See <a class="reference internal" href="#multiple-events">the relevant section</a>.</p>
+<br />
+<ol class="arabic simple" start="2">
+<li><p>Extended info on each event for all subjects:</p></li>
+</ol>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">results_edss</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>   id  nevent event_type  total_fu  time2event  bl2event  conf84  PIRA_conf84  \
+0   1       1       PIRA       534       292.0     292.0       1            1   
+1   2       1        RAW       730       198.0     198.0       1            0   
+2   3       0                  491       491.0       NaN       0            0   
+3   4       0                  586       586.0       NaN       0            0   
+4   5       1       PIRA       637       140.0     140.0       1            1   
+5   6       0                  491       491.0       NaN       0            0   
+
+   sust_days  sust_last  
+0        242          1  
+1         84          0  
+2          0          0  
+3          0          0  
+4        497          1  
+5          0          0  
+</pre></div>
+</div>
+</div>
+</div>
+<p>where: <code class="docutils literal notranslate"><span class="pre">nevent</span></code> is the cumulative event count for each subject; <code class="docutils literal notranslate"><span class="pre">event_type</span></code> characterises the event; <code class="docutils literal notranslate"><span class="pre">total_fu</span></code> is the number of days from start to end of follow-up; <code class="docutils literal notranslate"><span class="pre">time2event</span></code> is the number of days from start of follow-up to event(*); <code class="docutils literal notranslate"><span class="pre">bl2event</span></code> is the number of days from current baseline to event; <code class="docutils literal notranslate"><span class="pre">conf84</span></code> reports whether the event was confirmed over 84 days (12 weeks); <code class="docutils literal notranslate"><span class="pre">sust_days</span></code> is the number of days for which the event was sustained; <code class="docutils literal notranslate"><span class="pre">sust_last</span></code> reports whether the event was sustained until the last visit.</p>
+<p>(*): For subjects with no confirmed events, <code class="docutils literal notranslate"><span class="pre">time2event</span></code> is the total follow-up length. To omit these subjects, set <code class="docutils literal notranslate"><span class="pre">include_stable=False</span></code> in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>.</p>
+<p>Several qualitative and quantitative options for analysing disability evolution are given as optional arguments of <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> that can be set by the user. In order to ensure reproducibility, the results should always be complemented by the set of criteria used to obtain them. In the following sections we will go into more detail about usage and best practices for the different options. Please refer to the documentation for a complete illustration of each of the function arguments and their default values.</p>
+</section>
+<section id="outcome">
+<span id="id4"></span><h2>Outcome<a class="headerlink" href="#outcome" title="Link to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> function detects the events sequentially by scanning the outcome values in chronological order, and each value is tested for its difference from the current reference value. Such difference is typically required to be larger than a threshold <span class="math notranslate nohighlight">\(\delta\)</span>, depending on outcome type and on the reference value <span class="math notranslate nohighlight">\(x\)</span>. If the <code class="docutils literal notranslate"><span class="pre">outcome</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> is set to <code class="docutils literal notranslate"><span class="pre">'edss'</span></code>, <code class="docutils literal notranslate"><span class="pre">'nhpt'</span></code>, <code class="docutils literal notranslate"><span class="pre">'t25fw'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'sdmt'</span></code>, the following default settings are implemented <span id="id5">[<a class="reference internal" href="#id32" title="L V A E Bosma, J J Kragt, L Brieva, Z Khaleeli, X Montalban, C H Polman, A J Thompson, M Tintoré, and B M J Uitdehaag. Progression on the multiple sclerosis functional composite in multiple sclerosis: what is the optimal cut-off for the three components? Mult Scler, 16(7):862–867, Jul 2010. doi:10.1177/1352458510370464.">Bosma <em>et al.</em>, 2010</a>, <a class="reference internal" href="#id31" title="Anissa Kalinowski, Gary Cutter, Nina Bozinov, Jessica A Hinman, Michael Hittle, Robert Motl, Michelle Odden, and Lorene M Nelson. The timed 25-foot walk in a large cohort of multiple sclerosis patients. Mult Scler, 28(2):289–299, Feb 2022. doi:10.1177/13524585211017013.">Kalinowski <em>et al.</em>, 2022</a>, <a class="reference internal" href="#id33" title="Johannes Lorscheider, Katherine Buzzard, Vilija Jokubaitis, Tim Spelman, Eva Havrdova, Dana Horakova, Maria Trojano, Guillermo Izquierdo, Marc Girard, Pierre Duquette, Alexandre Prat, Alessandra Lugaresi, François Grand'Maison, Pierre Grammond, Raymond Hupperts, Raed Alroughani, Patrizia Sola, Cavit Boz, Eugenio Pucci, Jeanette Lechner-Scott, Roberto Bergamaschi, Celia Oreja-Guevara, Gerardo Iuliano, Vincent Van Pesch, Franco Granella, Cristina Ramo-Tello, Daniele Spitaleri, Thor Petersen, Mark Slee, Freek Verheul, Radek Ampapa, Maria Pia Amato, Pamela McCombe, Steve Vucic, JoséLuis Sánchez Menoyo, Edgardo Cristiano, Michael H Barnett, Suzanne Hodgkinson, Javier Olascoaga, Maria Laura Saladino, Orla Gray, Cameron Shaw, Fraser Moore, Helmut Butzkueven, and Tomas Kalincik. Defining secondary progressive multiple sclerosis. Brain, 139(Pt 9):2395–2405, Sep 2016. doi:10.1093/brain/aww173.">Lorscheider <em>et al.</em>, 2016</a>, <a class="reference internal" href="#id30" title="Lauren Strober, John DeLuca, Ralph Hb Benedict, Adam Jacobs, Jeffrey A Cohen, Nancy Chiaravalloti, Lynn D Hudson, Richard A Rudick, and Nicholas G LaRocca. Symbol digit modalities test: a valid clinical trial endpoint for measuring cognition in multiple sclerosis. Mult Scler, 25(13):1781–1790, Nov 2019. doi:10.1177/1352458518808204.">Strober <em>et al.</em>, 2019</a>]</span>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">outcome='edss'</span></code>: Expanded Disability Status Scale (EDSS). <span class="math notranslate nohighlight">\(\delta(x)=\begin{cases} 1.5 \quad \text{ if } x=0\\1 \quad\;\;\; \text{ if } 0 &lt; x \leq 5\\0.5 \quad \text{ if } 5&lt;x\leq 10\end{cases}\)</span>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">outcome='nhpt'</span></code>: Nine-Hole Peg Test (NHPT), for either the dominant or the non-dominant hand. <span class="math notranslate nohighlight">\(\delta=\)</span> 20% of reference score;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">outcome='t25fw'</span></code>: Timed 25-Foot Walk (T25FW). <span class="math notranslate nohighlight">\(\delta=\)</span> 20% of reference score;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">outcome='sdmt'</span></code>: Symbol Digit Modalities Test (SDMT). <span class="math notranslate nohighlight">\(\delta=\)</span> either 3 points or 10% of reference score.</p></li>
+</ul>
+<p>These default options are internally implemented by the <code class="docutils literal notranslate"><span class="pre">compute_delta()</span></code> function. For example, if the baseline EDSS score is 4, a valid worsening will correspond to an increase by (at least):</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">compute_delta</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span> <span class="c1"># default outcome measure is &#39;edss&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.0
+</pre></div>
+</div>
+</div>
+</div>
+<p>If the baseline T25FW score is 10, the minimum shift that is considered as a valid change will be:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">compute_delta</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;t25fw&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2.0
+</pre></div>
+</div>
+</div>
+</div>
+<section id="custom-threshold-values">
+<h3>Custom threshold values<a class="headerlink" href="#custom-threshold-values" title="Link to this heading">¶</a></h3>
+<p>The user can provide their own function to customise the computation of the threshold values, using the <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> argument of <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>. The provided function must take the baseline value as argument, and return the corresponding threshold. This applies to two scenarios.</p>
+<ol class="arabic simple">
+<li><p><strong>The outcome of interest is among the ones listed above, but we want to define the thresholds differently.</strong> For example, we want to change the minimum <span class="math notranslate nohighlight">\(\delta\)</span> for SDMT to, say, “either 4 points or 20% of the reference value”. In this case, we would define:</p></li>
+</ol>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">my_sdmt_delta</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">x</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;CUSTOM minimum valid change from baseline SDMT=50: &#39;</span><span class="p">,</span> <span class="n">my_sdmt_delta</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span> <span class="c1"># my delta</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;DEFAULT minimum valid change from baseline SDMT=50: &#39;</span><span class="p">,</span> <span class="n">compute_delta</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;sdmt&#39;</span><span class="p">))</span> <span class="c1"># default delta</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CUSTOM minimum valid change from baseline SDMT=50:  4
+DEFAULT minimum valid change from baseline SDMT=50:  3
+</pre></div>
+</div>
+</div>
+</div>
+<p>To use our custom function, we can then set <code class="docutils literal notranslate"><span class="pre">delta_fun=my_sdmt_delta</span></code> in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> when computing the disability events.</p>
+<ol class="arabic simple" start="2">
+<li><p><strong>The outcome of interest is not among the ones listed above.</strong> In this case, we set <code class="docutils literal notranslate"><span class="pre">outcome=None</span></code>, and <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> as our desired custom-defined function. By default, higher values of a custom outcome are interpreted as a worsening. If the opposite direction of worsening is desired, set the <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument to <code class="docutils literal notranslate"><span class="pre">'decrease'</span></code>. Note that the <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument is only used by <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> when <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to <code class="docutils literal notranslate"><span class="pre">None</span></code>. Otherwise, <code class="docutils literal notranslate"><span class="pre">worsening</span></code> is automatically set to <code class="docutils literal notranslate"><span class="pre">'increase'</span></code> if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to <code class="docutils literal notranslate"><span class="pre">'edss'</span></code>, <code class="docutils literal notranslate"><span class="pre">'nhpt'</span></code>, <code class="docutils literal notranslate"><span class="pre">'t25fw'</span></code>, and to <code class="docutils literal notranslate"><span class="pre">'decrease'</span></code> if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to <code class="docutils literal notranslate"><span class="pre">'sdmt'</span></code>.</p></li>
+</ol>
+</section>
+</section>
+<section id="baseline-scheme">
+<span id="id6"></span><h2>Baseline scheme<a class="headerlink" href="#baseline-scheme" title="Link to this heading">¶</a></h2>
+<p>The assessment of the disability evolution strongly depends on the choices made in defining the starting point, i.e., the baseline. Different behaviours are appropriate in different contexts. This aspect is controlled by the <code class="docutils literal notranslate"><span class="pre">baseline</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>. The following three alternative baseline schemes can be adopted.</p>
+<ul class="simple">
+<li><p><strong>Fixed baseline</strong> (<code class="docutils literal notranslate"><span class="pre">baseline='fixed'</span></code>, default): the baseline visit is set to be the first available assessment.</p></li>
+<li><p><strong>Improvement-based roving baseline</strong> (<code class="docutils literal notranslate"><span class="pre">baseline='roving_impr'</span></code>): the baseline visit is initially set as the first available assessment, then updated after each confirmed improvement. <strong>This scheme is suitable for a first-CDW setting to discard fluctuations around the baseline <span id="id7">[<a class="reference internal" href="#id27" title="Jannis Müller, Alessandro Cagol, Johannes Lorscheider, Charidimos Tsagkas, Pascal Benkert, Özgür Yaldizli, Jens Kuhle, Tobias Derfuss, Maria Pia Sormani, Alan Thompson, Cristina Granziera, and Ludwig Kappos. Harmonizing definitions for progression independent of relapse activity in multiple sclerosis: a systematic review. JAMA Neurol, 80(11):1232–1245, Nov 2023. doi:10.1001/jamaneurol.2023.3331.">Müller <em>et al.</em>, 2023</a>]</span>, but not recommended for clinical trial data as it may break the randomisation</strong>. The re-baseline procedure can be made finer through the <code class="docutils literal notranslate"><span class="pre">sub_threshold_rebl</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>: setting <code class="docutils literal notranslate"><span class="pre">sub_threshold_rebl='improvement'</span></code>, for instance, moves the reference value after <em>any</em> confirmed improvement, even if the difference from the current reference is smaller than the minimum <span class="math notranslate nohighlight">\(\delta\)</span>. In this case, the sub-threshold improvement events are used to move the baseline, but not listed in the event sequence.</p></li>
+<li><p><strong>Worsening-based roving baseline</strong> (<code class="docutils literal notranslate"><span class="pre">baseline='roving_wors'</span></code>): the baseline visit is initially set as the first available assessment, then updated after each confirmed worsening. <strong>This scheme is suitable when the endpoint of interest is a specific type of CDW</strong>: for instance, when searching specifically for PIRA events, the reference should be moved after any previous RAW event; when searching specifically for RAW events, the reference should be moved after any previous PIRA event. The re-baseline procedure can be made finer through the <code class="docutils literal notranslate"><span class="pre">sub_threshold_rebl</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>: setting <code class="docutils literal notranslate"><span class="pre">sub_threshold_rebl='worsening'</span></code>, for instance, moves the reference value after <em>any</em> confirmed worsening, even if the difference from the current reference is smaller than the minimum <span class="math notranslate nohighlight">\(\delta\)</span>. In this case, the sub-threshold worsening events are used to move the baseline, but not listed in the event sequence.</p></li>
+<li><p><strong>Roving baseline</strong> (<code class="docutils literal notranslate"><span class="pre">baseline='roving'</span></code>): the baseline visit is initially set as the first available assessment, then updated after each event. <strong>This scheme is recommended in a “multiple events” setting</strong> <span id="id8">[<a class="reference internal" href="#id35" title="Ludwig Kappos, Helmut Butzkueven, Heinz Wiendl, Timothy Spelman, Fabio Pellegrini, Yi Chen, Qunming Dong, Harold Koendgen, Shibeshih Belachew, Maria Trojano, and On Behalf of the Tysabri® Observational Program (TOP) Investigators. Greater sensitivity to multiple sclerosis disability worsening and progression events using a roving versus a fixed reference value in a prospective cohort study. Multiple Sclerosis Journal, 24(7):963-973, 2018. PMID: 28554238. URL: https://doi.org/10.1177/1352458517709619, arXiv:https://doi.org/10.1177/1352458517709619, doi:10.1177/1352458517709619.">Kappos <em>et al.</em>, 2018</a>]</span> (see example below), <strong>but not recommended for clinical trial data as it may break the randomisation</strong>. The re-baseline procedure can be made finer through the <code class="docutils literal notranslate"><span class="pre">sub_threshold_rebl</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>: setting <code class="docutils literal notranslate"><span class="pre">sub_threshold_rebl='event'</span></code>, for instance,  moves the reference value after <em>any</em> confirmed change, even if the difference from the current reference is smaller than the minimum <span class="math notranslate nohighlight">\(\delta\)</span>. In this case, the sub-threshold events are used to move the baseline, but not listed in the event sequence.</p></li>
+</ul>
+<p><strong>NOTE.</strong> If the baseline data is stored in a separate file, the user should merge it with the main <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> containing longitudinal visit data. This can be done by inserting the baseline date and outcome value for each subject at the beginning of the <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> (not necessarily next to the other visits from the same subject – they will be grouped by subject ID). <span style="color: red;">The possibility to directly input a separate file for baseline data may be added in the future.</span></p>
+<br />
+<p>When a roving baseline is used, the reference is moved after a previously detected event. The new reference may be set at the date of the previous event (<code class="docutils literal notranslate"><span class="pre">proceed_from='event'</span></code>), or at the first confirmation visit of such event (<code class="docutils literal notranslate"><span class="pre">proceed_from='firstconf'</span></code>, default).</p>
+<p>If the baseline visit occurs in the vicinity of a clinical relapse, the reference value may be overestimated. The <code class="docutils literal notranslate"><span class="pre">relapse_to_bl</span></code> argument allows to specify the minimum accepted distance (in days) of the baseline visit from the onset of a previous relapse. For instance, if <code class="docutils literal notranslate"><span class="pre">baseline='fixed'</span></code> and <code class="docutils literal notranslate"><span class="pre">relapse_to_bl=30</span></code>, the baseline visit is chosen as the first available visit satisfying the requirement of “no relapses within the preceding 30 days”. If two values are provided, they are interpreted as intervals before <em>and after</em> the event – e.g., <code class="docutils literal notranslate"><span class="pre">relapse_to_bl=[30,</span> <span class="pre">2]</span></code> implements the constraint of “no relapses within the preceding 30 days or within the following 2 days”. If relapse <strong>end dates</strong> are available (may be provided as an additional column in the relapse file whose name is specified by argument <code class="docutils literal notranslate"><span class="pre">renddate_col</span></code> in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>), the first value of <code class="docutils literal notranslate"><span class="pre">relapse_to_bl</span></code> is overwritten by the relapse duration, unless it was set to 0 (in which case it stays 0 and the baseline is <strong>not</strong> moved based on the influence of previous relapses). If the <code class="docutils literal notranslate"><span class="pre">baseline</span></code> argument is set to a roving scheme, all the above applies to every baseline change as well.</p>
+<p>On top of the chosen baseline scheme, <em>post-relapse re-baseline</em> <span id="id9">[<a class="reference internal" href="#id28" title="Ludwig Kappos, Jerry S Wolinsky, Gavin Giovannoni, Douglas L Arnold, Qing Wang, Corrado Bernasconi, Fabian Model, Harold Koendgen, Marianna Manfrini, Shibeshih Belachew, and Stephen L Hauser. Contribution of relapse-independent progression vs relapse-associated worsening to overall confirmed disability accumulation in typical relapsing multiple sclerosis in a pooled analysis of 2 randomized clinical trials. JAMA Neurol, 77(9):1132–1140, Sep 2020. doi:10.1001/jamaneurol.2020.1568.">Kappos <em>et al.</em>, 2020</a>]</span> can be applied by setting <code class="docutils literal notranslate"><span class="pre">relapse_rebl=True</span></code> in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>. If this is enabled, the onset of each relapse prompts a re-baseline to the next available visit following the relapse and out of its influence (as per <code class="docutils literal notranslate"><span class="pre">relapse_to_bl</span></code>).</p>
+<p>Due to fluctuations in the data, the new reference value following a re-baseline may fall at a local minimum or maximum of the disability trajectory. These may be excluded for consideration as baseline visits using the <code class="docutils literal notranslate"><span class="pre">skip_local_extrema</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>.</p>
+<p>Finally, as an additional constraint, an updated baseline can be forced to have a score greater than or equal to the previous baseline by setting <code class="docutils literal notranslate"><span class="pre">bl_geq=True</span></code> in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>.</p>
+<p>As already mentioned above, extra caution should be used when applying any re-baseline scheme to randomised data, as moving the reference value based on post-randomisation events can introduce bias (especially if the occurrence of these events is influenced by the treatment). <strong>For clinical trial data, general recommendation is to use a fixed baseline (at the time of randomisation).</strong></p>
+<section id="multiple-events">
+<span id="id10"></span><h3>Multiple events<a class="headerlink" href="#multiple-events" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">event</span></code> argument allows to specify which events to detect. By default, it is set to <code class="docutils literal notranslate"><span class="pre">'firstCDW'</span></code> (only detect the first CDW event). It can be set to <code class="docutils literal notranslate"><span class="pre">'multiple'</span></code> to sequentially detect all disability worsening or improvement events.</p>
+<p>For example, extracting multiple EDSS events for subject <code class="docutils literal notranslate"><span class="pre">5</span></code> from <code class="docutils literal notranslate"><span class="pre">toydata_visits</span></code> with a <strong>fixed</strong> baseline would result in the following.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Data:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">toydata_visits</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">toydata_visits</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="o">==</span><span class="mi">5</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;EDSS&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span> <span class="c1"># EDSS visits</span>
+
+<span class="n">_</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>
+                    <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span> 
+                    <span class="n">subjects</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>
+                    <span class="n">conf_days</span><span class="o">=</span><span class="mi">12</span> <span class="o">*</span> <span class="mi">7</span><span class="p">,</span> <span class="n">proceed_from</span><span class="o">=</span><span class="s1">&#39;firstconf&#39;</span><span class="p">,</span>
+                    <span class="n">event</span><span class="o">=</span><span class="s1">&#39;multiple&#39;</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s1">&#39;fixed&#39;</span><span class="p">,</span> 
+                    <span class="n">include_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">---Results with fixed baseline:---&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;nevent&#39;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="c1"># results</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data:
+        date  EDSS
+0 2021-06-14   4.0
+1 2021-09-12   4.0
+2 2021-11-01   5.0
+3 2022-01-17   5.5
+4 2022-04-30   5.0
+5 2022-07-06   5.5
+6 2022-11-09   5.5
+7 2022-12-15   5.0
+8 2023-03-13   5.5
+
+---Results with fixed baseline:---
+nevent                         1                    2                    3
+event_type                  PIRA                 PIRA                 PIRA
+bldate       2021-06-14 00:00:00  2021-06-14 00:00:00  2021-06-14 00:00:00
+date         2021-11-01 00:00:00  2022-04-30 00:00:00  2022-12-15 00:00:00
+total_fu                     637                  637                  637
+time2event                 140.0                320.0                549.0
+bl2event                   140.0                320.0                549.0
+conf84                         1                    1                    1
+PIRA_conf84                    1                    1                    1
+sust_days                    497                  317                   88
+sust_last                      1                    1                    1
+</pre></div>
+</div>
+</div>
+</div>
+<p>With these settings, the EDSS worsening at visit <code class="docutils literal notranslate"><span class="pre">2</span></code> (EDSS=5.0, confirmed at visit <code class="docutils literal notranslate"><span class="pre">3</span></code>) does not trigger a re-baseline. The algorithm keeps searching for events from after the confirmation visit (<code class="docutils literal notranslate"><span class="pre">proceed_from='firstconf'</span></code>), evaluating the changes <strong>relative to the original baseline</strong> (EDSS=4.0, visit <code class="docutils literal notranslate"><span class="pre">0</span></code>). This results in two more “worsening events” detected at visits <code class="docutils literal notranslate"><span class="pre">4</span></code> (EDSS=5.0) and visit <code class="docutils literal notranslate"><span class="pre">7</span></code> (EDSS=5.0), when in reality the EDSS score is stable. This mistake is avoided by adopting a <strong>roving</strong> baseline scheme:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">_</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>
+                    <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span> 
+                    <span class="n">subjects</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>
+                    <span class="n">conf_days</span><span class="o">=</span><span class="mi">12</span> <span class="o">*</span> <span class="mi">7</span><span class="p">,</span> <span class="n">proceed_from</span><span class="o">=</span><span class="s1">&#39;firstconf&#39;</span><span class="p">,</span>
+                    <span class="n">event</span><span class="o">=</span><span class="s1">&#39;multiple&#39;</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s1">&#39;roving&#39;</span><span class="p">,</span>  <span class="c1"># &lt;-----</span>
+                    <span class="n">include_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">---Results with roving baseline:---&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;nevent&#39;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="c1"># results</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>---Results with roving baseline:---
+nevent                         1
+event_type                  PIRA
+bldate       2021-06-14 00:00:00
+date         2021-11-01 00:00:00
+total_fu                     637
+time2event                 140.0
+bl2event                   140.0
+conf84                         1
+PIRA_conf84                    1
+sust_days                    497
+sust_last                      1
+</pre></div>
+</div>
+</div>
+</div>
+<p>The baseline is now moved to the confirmation visit of the first worsening event (PIRA at visit <code class="docutils literal notranslate"><span class="pre">3</span></code>, EDSS=5.5). No further confirmed changes are detected with respect to this baseline.
+<br /></p>
+<p>Other valid values for the <code class="docutils literal notranslate"><span class="pre">event</span></code> argument are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'first'</span></code>: only the very first event – improvement or worsening;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'firsteach'</span></code>: first improvement <em>and</em> first worsening, in chronological order;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'firstCDWtype'</span></code>: first CDW of each kind – PIRA, RAW, and undefined, in chronological order;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'firstPIRA'</span></code>: first PIRA event;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'firstRAW'</span></code>: first RAW event.</p></li>
+</ul>
+<p>Note: if, for example, <code class="docutils literal notranslate"><span class="pre">'event=firstPIRA'</span></code>, all non-PIRA events <em>preceding</em> the first PIRA are actually detected – although not reported. This allows to combine this scenario with a roving baseline scheme, where the baseline is moved after every confirmed non-PIRA event. For instance, if a RAW event occurs first, the subsequent worsening would be counted from the re-baselined outcome value after the RAW.</p>
+</section>
+</section>
+<section id="event-confirmation">
+<span id="id11"></span><h2>Event confirmation<a class="headerlink" href="#event-confirmation" title="Link to this heading">¶</a></h2>
+<p>An event is only validated if the change in the outcome value from the current baseline is maintained <strong>up to</strong>(*) a subsequent <em>confirmation visit</em> at a pre-specified distance from the event <span id="id12">[<a class="reference internal" href="#id29" title="Daniel Ontaneda, Alan J Thompson, Robert J Fox, and Jeffrey A Cohen. Progressive multiple sclerosis: prospects for disease therapy, repair, and restoration of function. Lancet, 389(10076):1357–1366, Apr 2017. doi:10.1016/S0140-6736(16)31320-4.">Ontaneda <em>et al.</em>, 2017</a>]</span>. The event is confirmed if the difference in the outcome value from the baseline score remains above-<a class="reference internal" href="#outcome">threshold</a> at all assessments up to the confirmation visit. For example, with the default EDSS thresholds, an increase in EDSS from 4 points to 6 points is confirmed if EDSS=5 at all subsequent visits; it is not confirmed if EDSS=4.5 at all subsequent visits.</p>
+<p>The chosen confirmation period depends on the type of study and on the frequency of visits, and can be set in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> by using the <code class="docutils literal notranslate"><span class="pre">conf_days</span></code> argument. A tolerance interval around <code class="docutils literal notranslate"><span class="pre">conf_days</span></code> can be specified using the <code class="docutils literal notranslate"><span class="pre">conf_tol_days</span></code> argument, given as a sequence of two integers (left and right tolerance)(**). Setting the right end of the interval to <code class="docutils literal notranslate"><span class="pre">Inf</span></code> allows event confirmation to occur at any visit <em>after</em> <code class="docutils literal notranslate"><span class="pre">conf_days</span></code>. Let’s see two examples.</p>
+<p>i. A common setting for <strong>clinical trial data</strong> would be: <code class="docutils literal notranslate"><span class="pre">conf_days=7*12</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days=[0,</span> <span class="pre">np.inf]</span></code>,
+i.e., “confirmation over 12 or more weeks”.</p>
+<p>ii. A common setting for <strong>observational data</strong> would be: <code class="docutils literal notranslate"><span class="pre">conf_days=7*24</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days=[0,</span> <span class="pre">7*12]</span></code>,
+i.e., the confirmation visit must lie between 24 weeks after the event, and 36 weeks after the event.</p>
+<section id="additional-options">
+<h3>Additional options<a class="headerlink" href="#additional-options" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">conf_days</span></code> is specified as a sequence of values (e.g., <code class="docutils literal notranslate"><span class="pre">conf_days=[7*12,</span> <span class="pre">7*24]</span></code>), events are retained if confirmed by <em>at least one visit</em> falling within any of the specified periods (here, 12 <strong>or</strong> 24 weeks with their relative tolerance interval)(***). The results table will report whether an event was confirmed in each of the specified periods, see example <a class="reference internal" href="#example">below</a>.</p></li>
+<li><p>If the confirmation visit occurs in the vicinity of a clinical relapse, it is typically considered invalid. The <code class="docutils literal notranslate"><span class="pre">relapse_to_conf</span></code> argument allows to specify the minimum accepted distance (in days) of a confirmation visit from the onset of a previous relapse. For example, <code class="docutils literal notranslate"><span class="pre">relapse_to_conf=30</span></code> implements the constraint “no relapses within the preceding 30 days” for a visit to be used as confirmation. If two values are provided, they are interpreted as intervals before <em>and after</em> the event – e.g., <code class="docutils literal notranslate"><span class="pre">relapse_to_conf=[30,</span> <span class="pre">2]</span></code> implements the constraint “no relapses within the preceding 30 days or within the following 2 days”. If relapse <strong>end dates</strong> are available (may be provided as an additional column in the relapse file whose name is specified by argument <code class="docutils literal notranslate"><span class="pre">renddate_col</span></code> in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>), the first value of <code class="docutils literal notranslate"><span class="pre">relapse_to_conf</span></code> is overwritten by the relapse duration, unless it was set to 0 (in which case it stays 0 and confirmation visits are <strong>not</strong> discarded based on the influence of previous relapses).</p></li>
+<li><p>By default, a disability worsening occurring at the last available assessment is ignored by <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>. This behaviour can be changed using the <code class="docutils literal notranslate"><span class="pre">impute_last_visit</span></code> argument. If set to <code class="docutils literal notranslate"><span class="pre">TRUE</span></code>, any disability worsening occurring at the last visit is retained even though unconfirmed. If set to a numeric value N, unconfirmed worsening events are included only if occurring within N days of follow up (e.g., in case of early discontinuation).</p></li>
+<li><p>In scenarios (e.g., a clinical trial) where disability course is compared between two cohorts with different relapse rates, there may be an imbalance in visit frequency between the two groups, due to unscheduled visits after relapses. This implies a higher probability of detecting outcome changes in the group with more assessments. Such issue is sometimes addressed by only using scheduled visits as confirmation visits <span id="id13">[<a class="reference internal" href="#id24" title="Stephen L Hauser, Amit Bar-Or, Giancarlo Comi, Gavin Giovannoni, Hans-Peter Hartung, Bernhard Hemmer, Fred Lublin, Xavier Montalban, Kottil W Rammohan, Krzysztof Selmaj, Anthony Traboulsee, Jerry S Wolinsky, Douglas L Arnold, Gaelle Klingelschmitt, Donna Masterman, Paulo Fontoura, Shibeshih Belachew, Peter Chin, Nicole Mairon, Hideki Garren, and Ludwig Kappos. Ocrelizumab versus interferon beta-1a in relapsing multiple sclerosis. N Engl J Med, 376(3):221–234, Jan 2017. doi:10.1056/NEJMoa1601277.">Hauser <em>et al.</em>, 2017</a>]</span>. It is possible to implement this with <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> by including an additional column in the longitudinal data, specifying which visits can (<code class="docutils literal notranslate"><span class="pre">True</span></code>) or cannot (<code class="docutils literal notranslate"><span class="pre">False</span></code>) be used as confirmation visits. The name of such column must be specified using the <code class="docutils literal notranslate"><span class="pre">validconf_col</span></code> argument – for example, if the database contains a column <code class="docutils literal notranslate"><span class="pre">'scheduled'</span></code> tracking scheduled visits, unscheduled visits can be excluded from consideration as confirmation visits by setting <code class="docutils literal notranslate"><span class="pre">validconf_col='scheduled'</span></code>in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>.</p></li>
+</ul>
+<p>(*) The value change from baseline must also be maintained at all intermediate visits between the event and the confirmation visit. This behaviour may be changed by setting the <code class="docutils literal notranslate"><span class="pre">check_intermediate</span></code> argument to <code class="docutils literal notranslate"><span class="pre">False</span></code> (in this case, the change only needs to be confirmed <strong>at</strong> the designated confirmation visit). We do not recommend this, as it may lead to including random fluctuations as events. We included this option to provide the possibility of replicating the results from previous studies that used this rationale.</p>
+<p>(**) <code class="docutils literal notranslate"><span class="pre">conf_tol_days</span></code> can also be specified as a single integer if the same tolerance on left and right is desired.</p>
+<p>(***) An event is only confirmed if the value change from baseline is maintained <strong>at all visits up to the confirmation visit</strong>. So an event can only be “confirmed over 24 weeks” and <em>not</em> “confirmed over 12 weeks” if there are no valid confirmation visits falling within the 12-week window (unless <code class="docutils literal notranslate"><span class="pre">check_intermediate=FALSE</span></code>).</p>
+</section>
+<section id="sustained-worsening-or-improvement">
+<h3>Sustained worsening or improvement<a class="headerlink" href="#sustained-worsening-or-improvement" title="Link to this heading">¶</a></h3>
+<p>In addition to event confirmation, some studies require events to be <em>sustained</em> for a specified period of time. The <code class="docutils literal notranslate"><span class="pre">require_sust_days</span></code> argument allows to specify, if desired, the length of such period. For example, if <code class="docutils literal notranslate"><span class="pre">require_sust_days=7*48</span></code>, an event is only retained if the change in the outcome measure from the current baseline is confirmed at <em>all</em> visits falling within the following 48 weeks. If the event is sustained for the entire follow-up, it is retained even if the follow-up period ends &lt;48 weeks after the event. Setting <code class="docutils literal notranslate"><span class="pre">require_sust_days=Inf</span></code>, events are retained only when sustained for the entire follow-up duration.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">require_sust_days</span></code> argument may be of use in the following scenarios.</p>
+<ul class="simple">
+<li><p>Suppose the maximum follow-up in the population is 96 weeks excluding the baseline visit. If one wants to detect CDWs sustained over the whole follow-up, coding it as “worsening confirmed over 96 weeks or more” (<code class="docutils literal notranslate"><span class="pre">conf_days=7*96</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days=c(0,</span> <span class="pre">Inf)</span></code>) would discard CDWs of patients whose follow-up is shorter than 96 weeks. In a scenario where patients have different follow-up lengths, the <code class="docutils literal notranslate"><span class="pre">require_sust_days</span></code> argument offers a more reliable way of implementing this, e.g., as “worsening confirmed over 12 weeks or more and sustained for the whole follow-up period” (<code class="docutils literal notranslate"><span class="pre">conf_days=7*12</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days=c(0,</span> <span class="pre">Inf)</span></code>, <code class="docutils literal notranslate"><span class="pre">require_sust_days=Inf</span></code>).</p></li>
+<li><p>In observational data with coarsely- and unevenly-spaced visits, the <code class="docutils literal notranslate"><span class="pre">require_sust_days</span></code> argument may be used to detect sustained CDW (e.g., <code class="docutils literal notranslate"><span class="pre">require_sust_days=7*96</span></code>) while still requiring the presence of a confirmation visit within a specified interval from the event (e.g., <code class="docutils literal notranslate"><span class="pre">conf_days=7*12</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days=c(0,7*12)</span></code>).</p></li>
+<li><p>Sustained disability worsening can be required to exclude transient RAW events (see example <a class="reference internal" href="#example">below</a>).</p></li>
+</ul>
+</section>
+<section id="example">
+<span id="id14"></span><h3>Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h3>
+<p>Let’s look at subject <code class="docutils literal notranslate"><span class="pre">2</span></code> from <code class="docutils literal notranslate"><span class="pre">toydata_visits</span></code>:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Visits:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">toydata_visits</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">toydata_visits</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="o">==</span><span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;EDSS&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span> <span class="c1"># EDSS visits</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Relapses:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">toydata_relapses</span><span class="p">[</span><span class="n">toydata_relapses</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="o">==</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span> <span class="c1"># relapses</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Visits:
+        date  EDSS
+0 2020-11-26   4.0
+1 2020-12-30   4.0
+2 2021-03-24   4.5
+3 2021-06-12   5.5
+4 2021-09-04   5.0
+5 2021-12-02   4.5
+6 2022-02-23   4.5
+7 2022-05-19   6.0
+8 2022-08-28   6.0
+9 2022-11-26   6.0
+
+Relapses:
+   id       date
+0   2 2021-06-12
+1   2 2022-10-25
+</pre></div>
+</div>
+</div>
+</div>
+<p>The following code detects 12- or 24-week (84- or 168-day) confirmed events for subject <code class="docutils literal notranslate"><span class="pre">2</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">_</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span> <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>
+                    <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span> <span class="n">subjects</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                    <span class="n">conf_days</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="o">*</span><span class="mi">7</span><span class="p">,</span> <span class="mi">24</span><span class="o">*</span><span class="mi">7</span><span class="p">],</span> <span class="n">event</span><span class="o">=</span><span class="s1">&#39;multiple&#39;</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s1">&#39;roving&#39;</span><span class="p">,</span> 
+                    <span class="n">relapse_indep</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;prec&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s1">&#39;event&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s1">&#39;conf&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">)},</span>
+                    <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">---Results:---&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;nevent&#39;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="c1"># results</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>---Results:---
+nevent            1      2
+event_type      RAW   PIRA
+total_fu        730    730
+time2event    198.0  539.0
+bl2event      198.0  257.0
+conf84            1      1
+conf168           0      1
+PIRA_conf84       0      1
+PIRA_conf168      0      0
+sust_days        84    191
+sust_last         0      1
+</pre></div>
+</div>
+</div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">relapse_indep</span></code> argument specifies the relapse-free intervals for a CDW event to be classified as PIRA, see <a class="reference internal" href="#pira">the relevant section</a>. In this case, a high-specificity definition of PIRA is used <span id="id15">[<a class="reference internal" href="#id27" title="Jannis Müller, Alessandro Cagol, Johannes Lorscheider, Charidimos Tsagkas, Pascal Benkert, Özgür Yaldizli, Jens Kuhle, Tobias Derfuss, Maria Pia Sormani, Alan Thompson, Cristina Granziera, and Ludwig Kappos. Harmonizing definitions for progression independent of relapse activity in multiple sclerosis: a systematic review. JAMA Neurol, 80(11):1232–1245, Nov 2023. doi:10.1001/jamaneurol.2023.3331.">Müller <em>et al.</em>, 2023</a>]</span> that requires an absence of relapses between baseline and confirmation. The resulting events are</p>
+<ol class="arabic simple">
+<li><p>a 12-week-confirmed RAW;</p></li>
+<li><p>a 12-week-confirmed PIRA.</p></li>
+</ol>
+<p>Event #1 was confirmed over 12 weeks but not over 24 weeks, i.e., 168 days (<code class="docutils literal notranslate"><span class="pre">conf168</span></code> is <code class="docutils literal notranslate"><span class="pre">0</span></code>). Event #2 was also confirmed over 24 weeks (<code class="docutils literal notranslate"><span class="pre">conf168</span></code> is <code class="docutils literal notranslate"><span class="pre">1</span></code>) as a CDW. However, since a relapse occurred before the 24-week confirmation, it is not confirmed as PIRA over 24 weeks (<code class="docutils literal notranslate"><span class="pre">PIRA_conf168</span></code> is <code class="docutils literal notranslate"><span class="pre">0</span></code>).</p>
+<p>The RAW event found for subject <code class="docutils literal notranslate"><span class="pre">2</span></code> constitutes a <em>transient</em> accumulation of disability. Such events can be excluded from the <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> output by requiring that each event be sustained for at least a certain amount of time (specified by argument <code class="docutils literal notranslate"><span class="pre">require_sust_days</span></code>). For instance:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">_</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span> <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>
+                    <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span> <span class="n">subjects</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                    <span class="n">conf_days</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="o">*</span><span class="mi">7</span><span class="p">,</span> <span class="mi">24</span><span class="o">*</span><span class="mi">7</span><span class="p">],</span> <span class="n">event</span><span class="o">=</span><span class="s1">&#39;multiple&#39;</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s1">&#39;roving&#39;</span><span class="p">,</span> 
+                    <span class="n">require_sust_days</span><span class="o">=</span><span class="mi">48</span><span class="o">*</span><span class="mi">7</span><span class="p">,</span>  <span class="c1"># &lt;---</span>
+                    <span class="n">relapse_indep</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;prec&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s1">&#39;event&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s1">&#39;conf&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">)},</span>
+                    <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">---Results with require_sust_days=48*7:---&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;nevent&#39;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="c1"># results</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>---Results with require_sust_days=48*7:---
+nevent            1
+event_type     PIRA
+total_fu        730
+time2event    539.0
+bl2event      257.0
+conf84            1
+conf168           1
+PIRA_conf84       1
+PIRA_conf168      0
+sust_days       191
+sust_last         1
+</pre></div>
+</div>
+</div>
+</div>
+<p>A more detailed report of the event detection process in each of the cases examined above may be visualized by re-running the above code snippets with <code class="docutils literal notranslate"><span class="pre">verbose=2</span></code>, see <a class="reference internal" href="#printing-progress-info">Printing progress info</a> section below.</p>
+</section>
+</section>
+<section id="classification-of-cdw-events">
+<h2>Classification of CDW events<a class="headerlink" href="#classification-of-cdw-events" title="Link to this heading">¶</a></h2>
+<p>When relevant, relapse data is to be provided using the optional <code class="docutils literal notranslate"><span class="pre">relapse</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>. It should be given as a <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> containing subject IDs and relapse onset dates (see section <a class="reference internal" href="#input-data">Input data</a>)(*).</p>
+<p>(*) If the names of “subject ID” and “date” columns in the relapse database are different from the main database, they must be specified using arguments <code class="docutils literal notranslate"><span class="pre">rsubj_col</span></code> and <code class="docutils literal notranslate"><span class="pre">rdate_col</span></code>.</p>
+<section id="raw">
+<span id="id16"></span><h3>RAW<a class="headerlink" href="#raw" title="Link to this heading">¶</a></h3>
+<p>RAW events are typically defined as CDW events occurring within a specified interval from the onset of a relapse. The length (in days) of such interval can be specified using the <code class="docutils literal notranslate"><span class="pre">relapse_assoc</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code>. Common values are 30 or 90 days. Additionally, one may also provide a maximum distance from relapses whose onset is <em>after</em> the event. The logic is that the reported onset date of a relapse may be slightly delayed. The examples below illustrate the usage of the <code class="docutils literal notranslate"><span class="pre">relapse_assoc</span></code> argument:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">relapse_assoc=90</span></code> (equivalent to <code class="docutils literal notranslate"><span class="pre">relapse_assoc=[90,</span> <span class="pre">0]</span></code>): RAW = “a CDW event occurring within 90 days after the onset of a relapse”;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">relapse_assoc=[90,</span> <span class="pre">7]</span></code>: RAW = “a CDW event occurring no more than 90 days after and no more than 7 days before the onset of a relapse”.</p></li>
+</ul>
+</section>
+<section id="pira">
+<span id="id17"></span><h3>PIRA<a class="headerlink" href="#pira" title="Link to this heading">¶</a></h3>
+<p>In the literature, PIRA is typically defined by requiring an absence of relapses within appropriate intervals based on the dates of the baseline visit, the worsening event, and the confirmation visit <span id="id18">[<a class="reference internal" href="#id25" title="Alessandro Cagol, Sabine Schaedelin, Muhamed Barakovic, Pascal Benkert, Ramona-Alexandra Todea, Reza Rahmanzadeh, Riccardo Galbusera, Po-Jui Lu, Matthias Weigel, Lester Melie-Garcia, Esther Ruberte, Nina Siebenborn, Marco Battaglini, Ernst-Wilhelm Radue, Özgür Yaldizli, Johanna Oechtering, Tim Sinnecker, Johannes Lorscheider, Bettina Fischer-Barnicol, Stefanie Müller, Lutz Achtnichts, Jochen Vehoff, Giulio Disanto, Oliver Findling, Andrew Chan, Anke Salmen, Caroline Pot, Claire Bridel, Chiara Zecca, Tobias Derfuss, Johanna M. Lieb, Luca Remonda, Franca Wagner, Maria I. Vargas, Renaud Du Pasquier, Patrice H. Lalive, Emanuele Pravatà, Johannes Weber, Philippe C. Cattin, Claudio Gobbi, David Leppert, Ludwig Kappos, Jens Kuhle, and Cristina Granziera. Association of Brain Atrophy With Disease Progression Independent of Relapse Activity in Patients With Relapsing Multiple Sclerosis. JAMA Neurology, 79(7):682-692, 07 2022. URL: https://doi.org/10.1001/jamaneurol.2022.1025, arXiv:https://jamanetwork.com/journals/jamaneurology/articlepdf/2792415/jamaneurology\_cagol\_2022\_oi\_220020\_1656444982.99513.pdf, doi:10.1001/jamaneurol.2022.1025.">Cagol <em>et al.</em>, 2022</a>, <a class="reference internal" href="#id28" title="Ludwig Kappos, Jerry S Wolinsky, Gavin Giovannoni, Douglas L Arnold, Qing Wang, Corrado Bernasconi, Fabian Model, Harold Koendgen, Marianna Manfrini, Shibeshih Belachew, and Stephen L Hauser. Contribution of relapse-independent progression vs relapse-associated worsening to overall confirmed disability accumulation in typical relapsing multiple sclerosis in a pooled analysis of 2 randomized clinical trials. JAMA Neurol, 77(9):1132–1140, Sep 2020. doi:10.1001/jamaneurol.2020.1568.">Kappos <em>et al.</em>, 2020</a>, <a class="reference internal" href="#id27" title="Jannis Müller, Alessandro Cagol, Johannes Lorscheider, Charidimos Tsagkas, Pascal Benkert, Özgür Yaldizli, Jens Kuhle, Tobias Derfuss, Maria Pia Sormani, Alan Thompson, Cristina Granziera, and Ludwig Kappos. Harmonizing definitions for progression independent of relapse activity in multiple sclerosis: a systematic review. JAMA Neurol, 80(11):1232–1245, Nov 2023. doi:10.1001/jamaneurol.2023.3331.">Müller <em>et al.</em>, 2023</a>]</span>. The <code class="docutils literal notranslate"><span class="pre">relapse_indep</span></code> argument in <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> allows to specify custom relapse-free intervals. The argument must be provided in the form of a dictionary as follows:</p>
+<p><code class="docutils literal notranslate"><span class="pre">{'prec':</span> <span class="pre">(p0,</span> <span class="pre">p1),</span> <span class="pre">'event':</span> <span class="pre">(e0,</span> <span class="pre">e1),</span> <span class="pre">'conf':</span> <span class="pre">(c0,</span> <span class="pre">c1)}</span></code>,</p>
+<p>The dictionary specifies the intervals [<code class="docutils literal notranslate"><span class="pre">p0</span></code>, <code class="docutils literal notranslate"><span class="pre">p1</span></code>], [<code class="docutils literal notranslate"><span class="pre">e0</span></code>, <code class="docutils literal notranslate"><span class="pre">e1</span></code>], and [<code class="docutils literal notranslate"><span class="pre">c0</span></code>, <code class="docutils literal notranslate"><span class="pre">c1</span></code>] around (any subset of) the three checkpoints:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'prec'</span></code>: a visit preceding the event – see below;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'event'</span></code>: the disability worsening event;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'conf'</span></code>: the first available confirmation visit.</p></li>
+</ul>
+<p>The dictionary can also optionally contain a key-value pair specifying how to choose <code class="docutils literal notranslate"><span class="pre">'prec'</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'prec_type':</span> <span class="pre">'baseline'</span></code> → ‘prec’ is the current baseline;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'prec_type':</span> <span class="pre">'last'</span></code> → ‘prec’ is the last visit before the event;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'prec_type':</span> <span class="pre">'last_lower'</span></code> → ‘prec’ is the last pre-worsening visit:
+<code class="docutils literal notranslate"><span class="pre">i</span></code> such that <code class="docutils literal notranslate"><span class="pre">outcome[event]</span> <span class="pre">-</span> <span class="pre">outcome[i]</span> <span class="pre">&gt;=</span> <span class="pre">delta_fun(outcome[i])</span></code> (if <code class="docutils literal notranslate"><span class="pre">worsening='increase'</span></code>, the opposite otherwise)
+and same for the confirmation visit.</p></li>
+</ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">'prec_type'</span></code> is not in the dictionary keys, <code class="docutils literal notranslate"><span class="pre">'prec'</span></code> is assumed to be the current baseline.</p>
+<p>If both ends of an interval are 0 (e.g., if both <code class="docutils literal notranslate"><span class="pre">p0=0</span></code> and <code class="docutils literal notranslate"><span class="pre">p1=0</span></code>), the checkpoint is ignored.
+If the right end is <code class="docutils literal notranslate"><span class="pre">None</span></code>, the interval is assumed to extend up to the left end of the next interval.
+If the left end is <code class="docutils literal notranslate"><span class="pre">None</span></code>, the interval is assumed to extend up to the right end of the previous interval.</p>
+<p>For example, in <span id="id19">Müller <em>et al.</em> [<a class="reference internal" href="#id27" title="Jannis Müller, Alessandro Cagol, Johannes Lorscheider, Charidimos Tsagkas, Pascal Benkert, Özgür Yaldizli, Jens Kuhle, Tobias Derfuss, Maria Pia Sormani, Alan Thompson, Cristina Granziera, and Ludwig Kappos. Harmonizing definitions for progression independent of relapse activity in multiple sclerosis: a systematic review. JAMA Neurol, 80(11):1232–1245, Nov 2023. doi:10.1001/jamaneurol.2023.3331.">2023</a>]</span>, the authors recommend an absence of relapses during the 90 days before and 30 days after the event, and during the 90 days before and 30 days after the confirmation visit for a CDW event to be considered as PIRA. This translates into: <code class="docutils literal notranslate"><span class="pre">p0</span> <span class="pre">=</span> <span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">p1</span> <span class="pre">=</span> <span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">e0</span> <span class="pre">=</span> <span class="pre">90</span></code>, <code class="docutils literal notranslate"><span class="pre">e1</span> <span class="pre">=</span> <span class="pre">30</span></code>, <code class="docutils literal notranslate"><span class="pre">c0</span> <span class="pre">=</span> <span class="pre">90</span></code>, <code class="docutils literal notranslate"><span class="pre">c1</span> <span class="pre">=</span> <span class="pre">30</span></code>. When a high specificity is desired, they recommend an absence of relapses in the whole period between the reference visit and the confirmation visit, which is implemented by setting: <code class="docutils literal notranslate"><span class="pre">p0</span> <span class="pre">=</span> <span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">p1</span> <span class="pre">=</span> <span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">e0</span> <span class="pre">=</span> <span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">e1</span> <span class="pre">=</span> <span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">c0</span> <span class="pre">=</span> <span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">c1</span> <span class="pre">=</span> <span class="pre">0</span></code>.</p>
+<br />
+</section>
+</section>
+<section id="msprog-outputs">
+<h2><code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> outputs<a class="headerlink" href="#msprog-outputs" title="Link to this heading">¶</a></h2>
+<section id="what-to-include-in-results">
+<h3>What to include in results<a class="headerlink" href="#what-to-include-in-results" title="Link to this heading">¶</a></h3>
+<p>The results <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> provides extended info on each event for all subjects. The following arguments can be used to control the information included.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">include_dates</span></code>: if <code class="docutils literal notranslate"><span class="pre">True</span></code>, the results will include the dates of baseline and event;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">include_value</span></code>: if <code class="docutils literal notranslate"><span class="pre">True</span></code>, the results will include the outcome value at baseline and event;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">include_stable</span></code>: if <code class="docutils literal notranslate"><span class="pre">True</span></code>, subjects with no confirmed events are included in the results, with <code class="docutils literal notranslate"><span class="pre">time2event</span></code> = total follow up.</p></li>
+</ul>
+<p>For example:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">summary</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span>
+                         <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span>
+                         <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>
+                         <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span>
+                         <span class="n">include_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">include_value</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">include_stable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                         <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                               0                    1                    2
+id                             1                    2                    5
+nevent                         1                    1                    1
+event_type                  PIRA                  RAW                 PIRA
+bldate       2021-09-23 00:00:00  2020-11-26 00:00:00  2021-06-14 00:00:00
+blvalue                      4.5                  4.0                  4.0
+date         2022-07-12 00:00:00  2021-06-12 00:00:00  2021-11-01 00:00:00
+value                        5.5                  5.5                  5.0
+total_fu                     534                  730                  637
+time2event                 292.0                198.0                140.0
+bl2event                   292.0                198.0                140.0
+conf84                         1                    1                    1
+PIRA_conf84                    1                    0                    1
+sust_days                    242                   84                  497
+sust_last                      1                    0                    1
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="printing-progress-info">
+<span id="id20"></span><h3>Printing progress info<a class="headerlink" href="#printing-progress-info" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">verbose</span></code> argument controls the amount of info printed out by the <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> function. When setting <code class="docutils literal notranslate"><span class="pre">verbose=0</span></code>, the function prints no info. When setting <code class="docutils literal notranslate"><span class="pre">verbose=1</span></code> (default), the function only prints out concise info. When setting <code class="docutils literal notranslate"><span class="pre">verbose=2</span></code>, the function prints out an extended log of the ongoing computations.</p>
+<p>For further insight into the event detection process, the <code class="docutils literal notranslate"><span class="pre">return_unconfirmed</span></code> argument allows to also return all score changes from baseline that were not identified as valid events (e.g., not confirmed).</p>
+<p>See the example below.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">summary</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">unconfirmed</span> <span class="o">=</span> <span class="n">MSprog</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span>
+                          <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span>
+                          <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>
+                          <span class="n">event</span><span class="o">=</span><span class="s1">&#39;multiple&#39;</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s1">&#39;roving&#39;</span><span class="p">,</span>
+                          <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span>
+                          <span class="n">return_unconfirmed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># &lt;---</span>
+                          <span class="n">verbose</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># &lt;---</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Subject #1: 8 visits, 0 relapses
+Baseline at visit no.1
+Searching for events from visit no.2 on
+EDSS change at visit no.5 (2022-07-12); potential confirmation visits available: no.6, 7, 8
+EDSS PIRA (visit no.5, 2022-07-12) confirmed at 84 weeks, sustained up to visit no.8 (2023-03-11)
+Baseline at visit no.6
+Searching for events from visit no.7 on
+No EDSS change in any subsequent visit: end process
+Event sequence: PIRA
+
+Subject #2: 10 visits, 2 relapses
+Baseline at visit no.1
+Searching for events from visit no.2 on
+EDSS change at visit no.4 (2021-06-12); potential confirmation visits available: no.5, 6, 7, 8, 9, 10
+EDSS RAW (visit no.4, 2021-06-12) confirmed at 84 weeks, sustained up to visit no.5 (2021-09-04)
+Baseline at visit no.5
+Searching for events from visit no.6 on
+EDSS change at visit no.8 (2022-05-19); potential confirmation visits available: no.9, 10
+EDSS PIRA (visit no.8, 2022-05-19) confirmed at 84 weeks, sustained up to visit no.10 (2022-11-26)
+Baseline at visit no.9
+Searching for events from visit no.10 on
+No EDSS change in any subsequent visit: end process
+Event sequence: RAW, PIRA
+
+Subject #3: 7 visits, 1 relapse
+Baseline at visit no.1
+Searching for events from visit no.2 on
+EDSS change at visit no.2 (2021-12-01); potential confirmation visits available: no.4, 5, 7
+Change not confirmed: proceed with search
+Searching for events from visit no.3 on
+No EDSS change in any subsequent visit: end process
+Event sequence: 
+
+Subject #4: 7 visits, 0 relapses
+Baseline at visit no.1
+Searching for events from visit no.2 on
+EDSS change at visit no.2 (2021-12-04); potential confirmation visits available: no.3, 4, 5, 6, 7
+EDSS improvement (visit no.2, 2021-12-04) confirmed at 84 weeks, sustained up to visit no.3 (2022-03-12)
+Baseline at visit no.3
+Searching for events from visit no.4 on
+EDSS change at visit no.4 (2022-07-19); potential confirmation visits available: no.5, 6, 7
+EDSS PIRA (visit no.4, 2022-07-19) confirmed at 84 weeks, sustained up to visit no.7 (2023-04-27)
+Baseline at visit no.5
+Searching for events from visit no.6 on
+No EDSS change in any subsequent visit: end process
+Event sequence: impr, PIRA
+
+Subject #5: 9 visits, 0 relapses
+Baseline at visit no.1
+Searching for events from visit no.2 on
+EDSS change at visit no.3 (2021-11-01); potential confirmation visits available: no.4, 5, 6, 7, 8, 9
+EDSS PIRA (visit no.3, 2021-11-01) confirmed at 84 weeks, sustained up to visit no.9 (2023-03-13)
+Baseline at visit no.4
+Searching for events from visit no.5 on
+EDSS change at visit no.5 (2022-04-30); potential confirmation visits available: no.7, 8, 9
+Change not confirmed: proceed with search
+Searching for events from visit no.6 on
+EDSS change at visit no.8 (2022-12-15); potential confirmation visits available: no.9
+Change not confirmed: proceed with search
+Searching for events from visit no.9 on
+No EDSS change in any subsequent visit: end process
+Event sequence: PIRA
+
+Subject #6: 7 visits, 1 relapse
+Baseline at visit no.1
+Searching for events from visit no.2 on
+EDSS change at visit no.3 (2022-02-15); potential confirmation visits available: no.4, 5, 7
+EDSS improvement (visit no.3, 2022-02-15) confirmed at 84 weeks, sustained up to visit no.5 (2022-10-05)
+Baseline at visit no.4
+Searching for events from visit no.5 on
+EDSS change at visit no.6 (2022-12-22); potential confirmation visits available: no.
+Change not confirmed: proceed with search
+Searching for events from visit no.7 on
+EDSS change at visit no.7 (2023-02-21); potential confirmation visits available: no.
+Change not confirmed: proceed with search
+Searching for events from visit no.- on
+No EDSS change in any subsequent visit: end process
+Event sequence: impr
+
+---
+Outcome: EDSS
+Confirmation over: [84] days (-7 days, +730.5 days)
+Baseline: roving
+Relapse influence (baseline): [30, 0] days
+Relapse influence (event): [0, 0] days
+Relapse influence (confirmation): [30, 0] days
+Events detected: multiple
+        
+---
+Total subjects: 6
+---
+Subjects with disability worsening: 4 (PIRA: 4; RAW: 1)
+Subjects with disability improvement: 2
+---
+CDW events: 5 (PIRA: 4; RAW: 1)
+Improvement events: 2
+</pre></div>
+</div>
+</div>
+</div>
+<br/>
+<p>Let’s visualise the unconfirmed events:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;---Unconfirmed events:---&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">unconfirmed</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>---Unconfirmed events:---
+   id       date  value     bldate  blvalue  closest_rel-  closest_rel+
+0   3 2021-12-01    4.5 2021-10-18      3.5           inf         365.0
+1   5 2022-04-30    5.0 2022-01-17      5.5           inf           inf
+2   5 2022-12-15    5.0 2022-01-17      5.5           inf           inf
+3   6 2022-12-22    6.0 2022-09-03      4.5           4.0           inf
+4   6 2023-02-21    6.0 2022-09-03      4.5          65.0           inf
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="time-to-disability-milestone">
+<h2>Time to disability milestone<a class="headerlink" href="#time-to-disability-milestone" title="Link to this heading">¶</a></h2>
+<p>Instead of studying disability course with respect to a baseline value, one can focus on the time taken to reach a specific disability milestone (e.g., EDSS <span class="math notranslate nohighlight">\(\geq\)</span> 6.0). This can be computed using another function from the <code class="docutils literal notranslate"><span class="pre">msprog</span></code> package, <code class="docutils literal notranslate"><span class="pre">value_milestone()</span></code>.</p>
+<p>The following code detects the time to EDSS <span class="math notranslate nohighlight">\(\geq\)</span> 6.0 for each subject in the toy data.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pymsprog</span><span class="w"> </span><span class="kn">import</span> <span class="n">value_milestone</span>
+
+<span class="n">vm</span> <span class="o">=</span> <span class="n">value_milestone</span><span class="p">(</span><span class="n">toydata_visits</span><span class="p">,</span> <span class="n">milestone</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                 <span class="n">subj_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;EDSS&#39;</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">,</span>
+                 <span class="n">relapse</span><span class="o">=</span><span class="n">toydata_relapses</span><span class="p">,</span>
+                 <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The function returns a <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> with one row per subject:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">vm</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>        date  EDSS  time2event  observed
+1 2023-03-11   NaN       534.0         0
+2 2022-05-19   6.0       539.0         1
+3 2023-02-21   NaN       491.0         0
+4 2023-04-27   NaN       586.0         0
+5 2023-03-13   NaN       637.0         0
+6 2023-02-21   NaN       491.0         0
+</pre></div>
+</div>
+</div>
+</div>
+<p>where: <code class="docutils literal notranslate"><span class="pre">'date'</span></code> contains the date of the first confirmed EDSS <span class="math notranslate nohighlight">\(\geq\)</span> 6.0 (or last date of follow-up if milestone is not reached or not confirmed); <code class="docutils literal notranslate"><span class="pre">'EDSS'</span></code> contains the first EDSS value <span class="math notranslate nohighlight">\(\geq\)</span> 6.0, if present, otherwise no value; <code class="docutils literal notranslate"><span class="pre">'time2event'</span></code> contains the time to reach EDSS <span class="math notranslate nohighlight">\(\geq\)</span> 6.0 (or total follow-up length if not reached or not confirmed); <code class="docutils literal notranslate"><span class="pre">'observed'</span></code> indicates whether EDSS <span class="math notranslate nohighlight">\(\geq\)</span> 6.0 was reached (1) or not (0).</p>
+<p>Several arguments controlling the behaviour of the <code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> function are also available for the <code class="docutils literal notranslate"><span class="pre">value_milestone()</span></code> function (e.g., <code class="docutils literal notranslate"><span class="pre">require_sust_days</span></code>, <code class="docutils literal notranslate"><span class="pre">impute_last_visit</span></code>…). Please refer to the documentation for a complete illustration of each of the function arguments and their default values.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<div class="docutils container" id="id21">
+<div role="list" class="citation-list">
+<div class="citation" id="id32" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">1</a><span class="fn-bracket">]</span></span>
+<p>L V A E Bosma, J J Kragt, L Brieva, Z Khaleeli, X Montalban, C H Polman, A J Thompson, M Tintoré, and B M J Uitdehaag. Progression on the multiple sclerosis functional composite in multiple sclerosis: what is the optimal cut-off for the three components? <em>Mult Scler</em>, 16(7):862–867, Jul 2010. <a class="reference external" href="https://doi.org/10.1177/1352458510370464">doi:10.1177/1352458510370464</a>.</p>
+</div>
+<div class="citation" id="id25" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id18">2</a><span class="fn-bracket">]</span></span>
+<p>Alessandro Cagol, Sabine Schaedelin, Muhamed Barakovic, Pascal Benkert, Ramona-Alexandra Todea, Reza Rahmanzadeh, Riccardo Galbusera, Po-Jui Lu, Matthias Weigel, Lester Melie-Garcia, Esther Ruberte, Nina Siebenborn, Marco Battaglini, Ernst-Wilhelm Radue, Özgür Yaldizli, Johanna Oechtering, Tim Sinnecker, Johannes Lorscheider, Bettina Fischer-Barnicol, Stefanie Müller, Lutz Achtnichts, Jochen Vehoff, Giulio Disanto, Oliver Findling, Andrew Chan, Anke Salmen, Caroline Pot, Claire Bridel, Chiara Zecca, Tobias Derfuss, Johanna M. Lieb, Luca Remonda, Franca Wagner, Maria I. Vargas, Renaud Du Pasquier, Patrice H. Lalive, Emanuele Pravatà, Johannes Weber, Philippe C. Cattin, Claudio Gobbi, David Leppert, Ludwig Kappos, Jens Kuhle, and Cristina Granziera. Association of Brain Atrophy With Disease Progression Independent of Relapse Activity in Patients With Relapsing Multiple Sclerosis. <em>JAMA Neurology</em>, 79(7):682–692, 07 2022. URL: <a class="reference external" href="https://doi.org/10.1001/jamaneurol.2022.1025">https://doi.org/10.1001/jamaneurol.2022.1025</a>, <a class="reference external" href="https://arxiv.org/abs/https://jamanetwork.com/journals/jamaneurology/articlepdf/2792415/jamaneurology\_cagol\_2022\_oi\_220020\_1656444982.99513.pdf">arXiv:https://jamanetwork.com/journals/jamaneurology/articlepdf/2792415/jamaneurology\_cagol\_2022\_oi\_220020\_1656444982.99513.pdf</a>, <a class="reference external" href="https://doi.org/10.1001/jamaneurol.2022.1025">doi:10.1001/jamaneurol.2022.1025</a>.</p>
+</div>
+<div class="citation" id="id24" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id13">3</a><span class="fn-bracket">]</span></span>
+<p>Stephen L Hauser, Amit Bar-Or, Giancarlo Comi, Gavin Giovannoni, Hans-Peter Hartung, Bernhard Hemmer, Fred Lublin, Xavier Montalban, Kottil W Rammohan, Krzysztof Selmaj, Anthony Traboulsee, Jerry S Wolinsky, Douglas L Arnold, Gaelle Klingelschmitt, Donna Masterman, Paulo Fontoura, Shibeshih Belachew, Peter Chin, Nicole Mairon, Hideki Garren, and Ludwig Kappos. Ocrelizumab versus interferon beta-1a in relapsing multiple sclerosis. <em>N Engl J Med</em>, 376(3):221–234, Jan 2017. <a class="reference external" href="https://doi.org/10.1056/NEJMoa1601277">doi:10.1056/NEJMoa1601277</a>.</p>
+</div>
+<div class="citation" id="id31" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">4</a><span class="fn-bracket">]</span></span>
+<p>Anissa Kalinowski, Gary Cutter, Nina Bozinov, Jessica A Hinman, Michael Hittle, Robert Motl, Michelle Odden, and Lorene M Nelson. The timed 25-foot walk in a large cohort of multiple sclerosis patients. <em>Mult Scler</em>, 28(2):289–299, Feb 2022. <a class="reference external" href="https://doi.org/10.1177/13524585211017013">doi:10.1177/13524585211017013</a>.</p>
+</div>
+<div class="citation" id="id35" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id3">1</a>,<a role="doc-backlink" href="#id8">2</a>)</span>
+<p>Ludwig Kappos, Helmut Butzkueven, Heinz Wiendl, Timothy Spelman, Fabio Pellegrini, Yi Chen, Qunming Dong, Harold Koendgen, Shibeshih Belachew, Maria Trojano, and On Behalf of the Tysabri® Observational Program (TOP) Investigators. Greater sensitivity to multiple sclerosis disability worsening and progression events using a roving versus a fixed reference value in a prospective cohort study. <em>Multiple Sclerosis Journal</em>, 24(7):963–973, 2018. PMID: 28554238. URL: <a class="reference external" href="https://doi.org/10.1177/1352458517709619">https://doi.org/10.1177/1352458517709619</a>, <a class="reference external" href="https://arxiv.org/abs/https://doi.org/10.1177/1352458517709619">arXiv:https://doi.org/10.1177/1352458517709619</a>, <a class="reference external" href="https://doi.org/10.1177/1352458517709619">doi:10.1177/1352458517709619</a>.</p>
+</div>
+<div class="citation" id="id28" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>6<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id9">1</a>,<a role="doc-backlink" href="#id18">2</a>)</span>
+<p>Ludwig Kappos, Jerry S Wolinsky, Gavin Giovannoni, Douglas L Arnold, Qing Wang, Corrado Bernasconi, Fabian Model, Harold Koendgen, Marianna Manfrini, Shibeshih Belachew, and Stephen L Hauser. Contribution of relapse-independent progression vs relapse-associated worsening to overall confirmed disability accumulation in typical relapsing multiple sclerosis in a pooled analysis of 2 randomized clinical trials. <em>JAMA Neurol</em>, 77(9):1132–1140, Sep 2020. <a class="reference external" href="https://doi.org/10.1001/jamaneurol.2020.1568">doi:10.1001/jamaneurol.2020.1568</a>.</p>
+</div>
+<div class="citation" id="id33" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">7</a><span class="fn-bracket">]</span></span>
+<p>Johannes Lorscheider, Katherine Buzzard, Vilija Jokubaitis, Tim Spelman, Eva Havrdova, Dana Horakova, Maria Trojano, Guillermo Izquierdo, Marc Girard, Pierre Duquette, Alexandre Prat, Alessandra Lugaresi, François Grand'Maison, Pierre Grammond, Raymond Hupperts, Raed Alroughani, Patrizia Sola, Cavit Boz, Eugenio Pucci, Jeanette Lechner-Scott, Roberto Bergamaschi, Celia Oreja-Guevara, Gerardo Iuliano, Vincent Van Pesch, Franco Granella, Cristina Ramo-Tello, Daniele Spitaleri, Thor Petersen, Mark Slee, Freek Verheul, Radek Ampapa, Maria Pia Amato, Pamela McCombe, Steve Vucic, JoséLuis Sánchez Menoyo, Edgardo Cristiano, Michael H Barnett, Suzanne Hodgkinson, Javier Olascoaga, Maria Laura Saladino, Orla Gray, Cameron Shaw, Fraser Moore, Helmut Butzkueven, and Tomas Kalincik. Defining secondary progressive multiple sclerosis. <em>Brain</em>, 139(Pt 9):2395–2405, Sep 2016. <a class="reference external" href="https://doi.org/10.1093/brain/aww173">doi:10.1093/brain/aww173</a>.</p>
+</div>
+<div class="citation" id="id36" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">8</a><span class="fn-bracket">]</span></span>
+<p>Fred D. Lublin, Stephen C. Reingold, Jeffrey A. Cohen, Gary R. Cutter, Per Soelberg Sørensen, Alan J. Thompson, Jerry S. Wolinsky, Laura J. Balcer, Brenda Banwell, Frederik Barkhof, Jr Bruce Bebo, Peter A. Calabresi, Michel Clanet, Giancarlo Comi, Robert J. Fox, Mark S. Freedman, Andrew D. Goodman, Matilde Inglese, Ludwig Kappos, Bernd C. Kieseier, John A. Lincoln, Catherine Lubetzki, Aaron E. Miller, Xavier Montalban, Paul W. O\textquoteright Connor, John Petkau, Carlo Pozzilli, Richard A. Rudick, Maria Pia Sormani, Olaf Stüve, Emmanuelle Waubant, and Chris H. Polman. Defining the clinical course of multiple sclerosis. <em>Neurology</em>, 83(3):278–286, 2014. URL: <a class="reference external" href="https://n.neurology.org/content/83/3/278">https://n.neurology.org/content/83/3/278</a>, <a class="reference external" href="https://arxiv.org/abs/https://n.neurology.org/content/83/3/278.full.pdf">arXiv:https://n.neurology.org/content/83/3/278.full.pdf</a>, <a class="reference external" href="https://doi.org/10.1212/WNL.0000000000000560">doi:10.1212/WNL.0000000000000560</a>.</p>
+</div>
+<div class="citation" id="id27" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>9<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id7">1</a>,<a role="doc-backlink" href="#id15">2</a>,<a role="doc-backlink" href="#id18">3</a>,<a role="doc-backlink" href="#id19">4</a>)</span>
+<p>Jannis Müller, Alessandro Cagol, Johannes Lorscheider, Charidimos Tsagkas, Pascal Benkert, Özgür Yaldizli, Jens Kuhle, Tobias Derfuss, Maria Pia Sormani, Alan Thompson, Cristina Granziera, and Ludwig Kappos. Harmonizing definitions for progression independent of relapse activity in multiple sclerosis: a systematic review. <em>JAMA Neurol</em>, 80(11):1232–1245, Nov 2023. <a class="reference external" href="https://doi.org/10.1001/jamaneurol.2023.3331">doi:10.1001/jamaneurol.2023.3331</a>.</p>
+</div>
+<div class="citation" id="id29" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id12">10</a><span class="fn-bracket">]</span></span>
+<p>Daniel Ontaneda, Alan J Thompson, Robert J Fox, and Jeffrey A Cohen. Progressive multiple sclerosis: prospects for disease therapy, repair, and restoration of function. <em>Lancet</em>, 389(10076):1357–1366, Apr 2017. <a class="reference external" href="https://doi.org/10.1016/S0140-6736(16)31320-4">doi:10.1016/S0140-6736(16)31320-4</a>.</p>
+</div>
+<div class="citation" id="id30" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">11</a><span class="fn-bracket">]</span></span>
+<p>Lauren Strober, John DeLuca, Ralph Hb Benedict, Adam Jacobs, Jeffrey A Cohen, Nancy Chiaravalloti, Lynn D Hudson, Richard A Rudick, and Nicholas G LaRocca. Symbol digit modalities test: a valid clinical trial endpoint for measuring cognition in multiple sclerosis. <em>Mult Scler</em>, 25(13):1781–1790, Nov 2019. <a class="reference external" href="https://doi.org/10.1177/1352458518808204">doi:10.1177/1352458518808204</a>.</p>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../modules.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">pymsprog</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../introduction.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">pymsprog: reproducible assessment of disability course in MS</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Noemi Montobbio
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Analysing disability course in MS</a><ul>
+<li><a class="reference internal" href="#input-data">Input data</a></li>
+<li><a class="reference internal" href="#minimal-example">Minimal example</a></li>
+<li><a class="reference internal" href="#outcome">Outcome</a><ul>
+<li><a class="reference internal" href="#custom-threshold-values">Custom threshold values</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#baseline-scheme">Baseline scheme</a><ul>
+<li><a class="reference internal" href="#multiple-events">Multiple events</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event-confirmation">Event confirmation</a><ul>
+<li><a class="reference internal" href="#additional-options">Additional options</a></li>
+<li><a class="reference internal" href="#sustained-worsening-or-improvement">Sustained worsening or improvement</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#classification-of-cdw-events">Classification of CDW events</a><ul>
+<li><a class="reference internal" href="#raw">RAW</a></li>
+<li><a class="reference internal" href="#pira">PIRA</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#msprog-outputs"><code class="docutils literal notranslate"><span class="pre">MSprog()</span></code> outputs</a><ul>
+<li><a class="reference internal" href="#what-to-include-in-results">What to include in results</a></li>
+<li><a class="reference internal" href="#printing-progress-info">Printing progress info</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#time-to-disability-milestone">Time to disability milestone</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </body>
+</html>

@@ -1,7 +1,8 @@
 <br/>
 
 > 🚧 **This repository is under active development. 
-> Please make sure you are using the latest version of the library – or at least v1.0.0, 
+> Please make sure you are using the latest version of the library 
+> (as per [PyPI](https://pypi.org/project/pymsprog/)) – or at least v1.0.0, 
 > which is functionally stable, though some minor aspects may still change ahead of a full 
 > stable release.** 🚧
 
@@ -13,7 +14,7 @@
 
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)
 
-[📖 Documentation](https://pymsprog.readthedocs.io)
+[📖 **Documentation**](https://pymsprog.readthedocs.io)
 
 `pymsprog` is a Python package providing tools for exhaustive and reproducible
 analysis of disability course in multiple sclerosis (MS) from longitudinal data. 

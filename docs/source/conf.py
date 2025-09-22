@@ -27,9 +27,27 @@ version = ".".join(release.split(".")[:2])  # major.minor
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",     # for Google-style or NumPy-style docstrings
-    "myst_parser",             # if using Markdown
+    #"myst_parser",             # if using Markdown 
+    "myst_nb",         # renders MyST notebooks (if using this, remove myst_parser!)
+    #"nbsphinx",          # renders standard Jupyter notebooks
+    "sphinxcontrib.bibtex",
 ]
 
+myst_enable_extensions = [
+    "dollarmath",
+    "linkify",
+    "deflist",
+    "colon_fence",
+    "attrs_inline",
+    "attrs_block",
+]
+
+bibtex_bibfiles = ["MSbiblio.bib"]   # relative to docs/source/
+
+# How citations look in-text
+bibtex_default_style = "plain"        # numeric references
+bibtex_reference_style = "author_year"  # for showing only cited references
+bibtex_style = "html"  # force HTML rendering
 
 templates_path = ['_templates']
 exclude_patterns = []

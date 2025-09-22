@@ -8,9 +8,15 @@ Welcome to pymsprog's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
 
    introduction
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Tutorials
+
+   tutorials/pymsprog_tutorial
 
 .. toctree::
    :maxdepth: 2

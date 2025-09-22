@@ -1,5 +1,5 @@
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 import numpy as np
 import pandas as pd
@@ -7,8 +7,7 @@ import pandas as pd
 import datetime
 
 import copy
-
-from importlib import resources
+from pathlib import Path
 
 import warnings
 
@@ -51,8 +50,9 @@ def load_toy_data():
     >>> visits.head()
     >>> relapses.head()
     '''
-    with resources.path('pymsprog.data', 'MSprog_toydata.xlsx') as data_path:
-        return pd.read_excel(data_path, sheet_name='visits'), pd.read_excel(data_path, sheet_name='relapses')
+    data_path = Path(__file__).parent / 'data' / 'MSprog_toydata.xlsx'
+    #with resources.path('pymsprog.data', 'MSprog_toydata.xlsx') as data_path:
+    return pd.read_excel(data_path, sheet_name='visits'), pd.read_excel(data_path, sheet_name='relapses')
 
 
 #####################################################################################
@@ -68,7 +68,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
             relapse_to_bl=30, relapse_to_event=0, relapse_to_conf=30,
             relapse_assoc=90, relapse_indep=None,
             impute_last_visit=0,
-            include_dates=False, include_value=False, include_stable=True, verbose=1):
+            include_dates=False, include_value=False, include_stable=True,
+            return_unconfirmed=False, verbose=1):
     '''
 
     Assess multiple sclerosis disability course from longitudinal data.
@@ -318,6 +319,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         If True, subjects with no confirmed events are included in the ``results`` DataFrame,
         with 'time2event' = total follow up.
 
+    return_unconfirmed: bool
+        If True, return an additional DataFrame including unconfirmed changes.
+
     verbose: int
         One of: 0 (print no info); 1 (print concise info, default); 2 (print extended info).
 
@@ -325,7 +329,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     -------
     (pandas.DataFrame, pandas.DataFrame)
          - ``summary``: summary of detected events for each subject;
-         - ``results``: extended info on event sequence for each subject.
+         - ``results``: extended info on event sequence for each subject;
+         - (if ``return_unconfirmed=True``) ``unconfirmed``: unconfirmed changes.
 
     Notes
     -----
@@ -503,7 +508,6 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         relapse[rdate_col] = pd.to_datetime(relapse[rdate_col])
         relapse_start = relapse[rdate_col].min()
 
-
     # Convert dates to days from minimum #_d_#
     global_start = min(data[date_col].min(), relapse_start)
     if relapsedata:
@@ -512,6 +516,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         relapse[rdate_col] = relapse[rdate_col].astype(int)
     data[date_col] = (data[date_col] - global_start).apply(lambda x : x.days)
 
+    # Restrict to subset of subjects
     if subjects is not None:
         data = data[data[subj_col].isin(subjects)]
         relapse = relapse[relapse[rsubj_col].isin(subjects)]
@@ -536,16 +541,22 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
     max_nevents = round(data.groupby(subj_col)[date_col].count().max()/2)
-    results = pd.DataFrame([[None]*10 + [None]*len(conf_days)
-                            + [None]*(len(conf_days)) + [None]*2]*nsub*max_nevents,
-               columns=[subj_col, 'nevent', 'event_type', 'bldate', 'blvalue', 'date', 'value',
+    results = pd.DataFrame([['', pd.NaT, np.nan, pd.NaT, np.nan,
+                             0, np.nan, np.nan]
+                            + [0]*len(conf_days)*2 + [0]*2]*nsub*max_nevents,
+               columns=['event_type', 'bldate', 'blvalue', 'date', 'value',
                         'total_fu', 'time2event', 'bl2event']
                        + ['conf'+str(m) for m in conf_days]+ ['PIRA_conf'+str(m) for m in conf_days]
                        + ['sust_days', 'sust_last'])
-    results[subj_col] = np.repeat(all_subj, max_nevents)
-    results['nevent'] = np.tile(np.arange(1, max_nevents + 1), nsub)
-    summary = pd.DataFrame([['']+[0]*5]*nsub, columns=['event_sequence', 'improvement', 'CDW',
-                                                  'RAW', 'PIRA', 'undefined_CDW'], index=all_subj)
+    results.insert(loc=0, column=subj_col, value=np.repeat(all_subj, max_nevents))
+    results.insert(loc=1, column='nevent', value=np.tile(np.arange(1, max_nevents + 1), nsub))
+    # results[subj_col] = np.repeat(all_subj, max_nevents)
+    # results['nevent'] = np.tile(np.arange(1, max_nevents + 1), nsub)
+
+    summary = pd.DataFrame([[''] + [0]*5]*nsub, columns=['event_sequence', 'improvement', 'CDW',
+                                                  'RAW', 'PIRA', 'undef_CDW'], index=all_subj)
+    if return_unconfirmed:
+        unconf = []
     total_fu = {s : 0 for s in all_subj}
 
     for subjid in all_subj:
@@ -562,13 +573,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         sorted_tmp = data_id.sort_values(by=[date_col])
         if any(sorted_tmp.index != data_id.index):
             print('Values not in chronological order: sorting them automatically')  #raise TypeError('uffa')
-            # print(sorted_tmp)
-            # print(data_id)
             data_id = sorted_tmp.copy()
 
         nvisits = len(data_id)
         first_visit = data_id[date_col].min()
-        relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].copy().reset_index(drop=True)
+        relapse_id = relapse.loc[relapse[rsubj_col] == subjid, :].copy().reset_index(drop=True)
         relapse_id = relapse_id.loc[relapse_id[rdate_col] >= first_visit - relapse_to_bl[0], :]  # ignore relapses occurring before first visit
         relapse_dates = relapse_id[rdate_col].values
         nrel = len(relapse_dates)
@@ -692,7 +701,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
             # Event detection
             change_idx = next((x for x in range(search_idx, nvisits)
                     if isevent_loc(data_id.loc[x, value_col], bl[value_col], type='change',
-                        st=sub_threshold_rebl!='none', baseline_delta=data_id.loc[bl_idx, valuedelta_col]) # first occurring value!=baseline
+                        st=sub_threshold_rebl!='none', baseline_delta=bl[valuedelta_col]) # first occurring value!=baseline
                         and (data_id.loc[x, 'closest_rel-'] >= relapse_to_event[0])  # occurring out of influence of last relapse
                         and (data_id.loc[x, 'closest_rel+'] >= relapse_to_event[1])  # occurring out of influence of next relapse
                                ), None)
@@ -723,32 +732,32 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 if verbose == 2:
                     print('%s change at visit no.%d (%s); potential confirmation visits available: no.%s'
                           %(outcome.upper(), change_idx + 1 ,
-                            global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
+                            global_start.date() + datetime.timedelta(days=data_id.loc[change_idx, date_col].item()), #_d_#
                             ', '.join(['%d' %(i + 1) for i in conf_idx])))
 
                 # Confirmation
                 # ============
 
                 # CONFIRMED IMPROVEMENT:
-                # --------------------
+                # ---------------------
                 if (len(conf_idx) > 0 # confirmation visits available
                         and isevent_loc(data_id.loc[change_idx,value_col], bl[value_col], type='impr',
-                                        baseline_delta=data_id.loc[bl_idx,valuedelta_col]) # value decreased (>delta) from baseline
+                                        baseline_delta=bl[valuedelta_col]) # value decreased (>delta) from baseline
                         and (all([isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
-                                              baseline_delta=data_id.loc[bl_idx,valuedelta_col])
+                                              baseline_delta=bl[valuedelta_col])
                                  for x in range(change_idx+1,conf_idx[0]+1)]) # decrease is confirmed at all visits between event and confirmation visit
                             if check_intermediate else isevent_loc(data_id.loc[conf_idx[0],value_col], bl[value_col],
-                                                        type='impr', baseline_delta=data_id.loc[bl_idx,valuedelta_col]))
+                                                        type='impr', baseline_delta=[valuedelta_col]))
                     ):
                     next_change = next((x for x in range(conf_idx[0] + 1, nvisits)
                         if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
-                                           baseline_delta=data_id.loc[bl_idx,valuedelta_col])), None) #_c_# data_id.loc[x,value_col] - bl[value_col] > - delta(bl[value_col])
+                                           baseline_delta=bl[valuedelta_col])), None) #_c_# data_id.loc[x,value_col] - bl[value_col] > - delta(bl[value_col])
                     conf_idx = conf_idx if next_change is None else [ic for ic in conf_idx if ic<next_change] # confirmed visits
                     #_conf_# #conf_t = conf_t[:len(conf_idx)]
                     # sustained until:
                     next_nonsust = next((x for x in range(conf_idx[0]+1,nvisits) #_r_# #conf_idx[-1]
                     if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
-                                       baseline_delta=data_id.loc[bl_idx,valuedelta_col]) #_c_# # decrease not sustained
+                                       baseline_delta=bl[valuedelta_col]) #_c_# # decrease not sustained
                         ), None)
 
                     valid_impr = 1
@@ -762,7 +771,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                         valid_impr = ((next_nonsust is None) or (data_id.loc[next_nonsust,date_col]
                                     - data_id.loc[change_idx,date_col]) >= require_sust_days #.days #_d_# # improvement sustained up to end of follow-up, or for `require_sust_days` days
                                       ) if check_intermediate else isevent_loc(data_id.loc[sust_vis,value_col], # improvement confirmed at last visit, or first visit after `require_sust_days` days
-                                    bl[value_col], type='impr', baseline_delta=data_id.loc[bl_idx,valuedelta_col])
+                                    bl[value_col], type='impr', baseline_delta=bl[valuedelta_col])
 
                     # If the event is retained (as per `require_sust_days`), we store the info:
                     if valid_impr:
@@ -782,7 +791,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                 del conf_t[m]
                             conf[m].append(1 if len(confirmed_at)>0 else 0) #_conf_# 1 if m in conf_t else 0
                         for m in conf_days: #[1:]: #_piraconf_#
-                            pira_conf[m].append(None)
+                            pira_conf[m].append(0)
                         sustd.append(data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
                         sustl.append(int(sust_idx == nvisits-1)) #int(data_id.loc[nvisits-1,value_col] - bl[value_col] <= - delta(bl[value_col]))
 
@@ -790,10 +799,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                         if verbose == 2:
                             print('%s improvement (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
                                   %(outcome.upper(), change_idx+1,
-                                    global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
+                                    global_start.date() + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
                                     ', '.join([str(x) for x in conf_t.keys()]),  #_conf_#
                                     sust_idx+1,
-                                    global_start + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
+                                    global_start.date() + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
 
                     else:
                         # If the event is NOT retained (as per `require_sust_days`), we proceed.
@@ -801,6 +810,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                             print('Change confirmed but not sustained for',
                                   ('>=%d days: ' %require_sust_days if require_sust_days<float('inf') else 'entire follow up:'),
                                     'proceed with search')
+                        if return_unconfirmed:
+                            unconf.append([subjid,
+                                           global_start + datetime.timedelta(days=data_id.loc[change_idx, date_col].item()),
+                                           data_id.loc[change_idx, value_col],
+                                           global_start + datetime.timedelta(days=bl[date_col].item()),
+                                           bl[value_col],
+                                           data_id.loc[change_idx, 'closest_rel-'],
+                                           data_id.loc[change_idx, 'closest_rel+']])
 
                     # For each m in conf_days, only keep the earliest available confirmation visit:
                     conf_idx = [np.min([x for x in conf_t[m] if x in conf_idx]) for m in
@@ -847,13 +864,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 # CONFIRMED WORSENING:
                 # -------------------
                 elif (isevent_loc(data_id.loc[change_idx, value_col], bl[value_col], type='wors',
-                                        baseline_delta=data_id.loc[bl_idx, valuedelta_col])  # value worsened (>delta) from baseline
+                                        baseline_delta=bl[valuedelta_col])  # value worsened (>delta) from baseline
                     and ((len(conf_idx) > 0 # confirmation visits available
                         and (all([isevent_loc(data_id.loc[x, value_col], bl[value_col], type='wors',
-                                              baseline_delta=data_id.loc[bl_idx, valuedelta_col]) #_c_#
+                                              baseline_delta=bl[valuedelta_col]) #_c_#
                                  for x in range(change_idx + 1, conf_idx[0] + 1)])  # worsening is confirmed at (all visits up to) first valid date
                             if check_intermediate else isevent_loc(data_id.loc[conf_idx[0], value_col], bl[value_col],
-                                type='wors', baseline_delta=data_id.loc[bl_idx, valuedelta_col]))  # worsening is confirmed at first valid date
+                                type='wors', baseline_delta=bl[valuedelta_col]))  # worsening is confirmed at first valid date
                         ) or (data_id.loc[change_idx, date_col] - data_id.loc[0, date_col] <= impute_max_fu
                               and np.random.binomial(1, impute_last_visit, 1)
                               and change_idx == nvisits - 1))
@@ -864,8 +881,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
                     # First visit at which worsening is not sustained:
                     next_nonsust = next((x for x in range(conf_idx[0] + 1, nvisits) #_r_# #conf_idx[-1]
-                        if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='wors',
-                                           baseline_delta=data_id.loc[bl_idx, valuedelta_col]) #_c_# # increase not sustained
+                        if not isevent_loc(data_id.loc[x, value_col], bl[value_col], type='wors',
+                                           baseline_delta=bl[valuedelta_col]) #_c_# # increase not sustained
                                     ), None)
                     # Discard potential confirmation visits if these occur out of sustained interval:
                     conf_idx = conf_idx if next_nonsust is None else [ic for ic in conf_idx if
@@ -877,14 +894,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     if require_sust_days:
                         if not check_intermediate and ((data_id.loc[nvisits - 1, date_col]
                                     - data_id.loc[change_idx, date_col]) >= require_sust_days):
-                            sust_vis = next((x for x in range(change_idx + 1, nvisits) if (data_id.loc[x,date_col]
-                                    - data_id.loc[change_idx,date_col]) >= require_sust_days))
+                            sust_vis = next((x for x in range(change_idx + 1, nvisits) if
+                                             data_id.loc[x, date_col] - data_id.loc[change_idx, date_col] >= require_sust_days))
                         else:
                             sust_vis = nvisits - 1
                         valid_prog = ((next_nonsust is None) or (data_id.loc[next_nonsust, date_col]
-                                    - data_id.loc[change_idx,date_col]) >= require_sust_days #.days #_d_# # worsening sustained up to end of follow-up, or for `require_sust_days` days
+                                    - data_id.loc[change_idx, date_col]) >= require_sust_days #.days #_d_# # worsening sustained up to end of follow-up, or for `require_sust_days` days
                                       ) if check_intermediate else isevent_loc(data_id.loc[sust_vis, value_col], # worsening confirmed at last visit, or first visit after `require_sust_days` days
-                                    bl[value_col], type='wors', baseline_delta=data_id.loc[bl_idx, valuedelta_col])
+                                    bl[value_col], type='wors', baseline_delta=bl[valuedelta_col])
 
                     # If the event is retained as per `require_sust_days` (i.e., valid_prog==1):
                     # 1. we check if it's PIRA/RAW;
@@ -999,7 +1016,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                             # **(
                             if event_type[-1] != 'PIRA':
                                 for m in conf_days:
-                                    pira_conf[m].append(None)
+                                    pira_conf[m].append(0)
 
                             bldate.append(global_start + datetime.timedelta(days=bl[date_col].item())) #_d_#
                             blvalue.append(bl[value_col])
@@ -1012,18 +1029,18 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                 if len(confirmed_at)==0:
                                     del conf_t[m]
                                 conf[m].append(1 if len(confirmed_at) > 0 else 0) #_conf_# 1 if m in conf_t else 0
-                            sustd.append(data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
+                            sustd.append(data_id.loc[sust_idx, date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
                             sustl.append(int(sust_idx == nvisits-1))
 
                             # Print info
                             if verbose == 2:
                                 print('%s %s (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
                                       %(outcome.upper(), event_type[-1], change_idx+1,
-                                        global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
+                                        global_start.date() + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
                                         ', '.join([str(x) for x in (pconf_t.keys() if event_type[-1]=='PIRA'
                                                                     else conf_t.keys())]), #_conf_#
                                         sust_idx+1,
-                                        global_start + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
+                                        global_start.date() + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
                             # )**
 
                     else:
@@ -1036,6 +1053,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                         if verbose == 2:
                             print('Change confirmed but not sustained for >=%d days: proceed with search'
                                   %require_sust_days)
+                        if return_unconfirmed:
+                            unconf.append([subjid,
+                                           global_start + datetime.timedelta(days=data_id.loc[change_idx, date_col].item()),
+                                           data_id.loc[change_idx, value_col],
+                                           global_start + datetime.timedelta(days=bl[date_col].item()),
+                                           bl[value_col],
+                                           data_id.loc[change_idx, 'closest_rel-'],
+                                           data_id.loc[change_idx, 'closest_rel+']])
 
                     if len(conf_t)>0:
                         # For each m in conf_days, only keep the earliest available confirmation visit
@@ -1090,6 +1115,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     search_idx = change_idx + 1 # skip the change and look for other patterns after it
                     if verbose == 2:
                         print('Change not confirmed: proceed with search')
+                    if return_unconfirmed and change_idx is not None:
+                        unconf.append([subjid,
+                                       global_start + datetime.timedelta(days=data_id.loc[change_idx, date_col].item()),
+                                       data_id.loc[change_idx, value_col],
+                                       global_start + datetime.timedelta(days=bl[date_col].item()),
+                                       bl[value_col],
+                                       data_id.loc[change_idx, 'closest_rel-'],
+                                       data_id.loc[change_idx, 'closest_rel+']])
 
             # Relapse-based rebaseline: if search_idx crossed a relapse, move baseline after it.
             # (unless search_idx is after the relapse but within its influence as per `relapse_assoc[0]`: could be a RAW)
@@ -1180,7 +1213,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
                 results.loc[results[subj_col]==subjid, 'time2event'] = total_fu[subjid]
                 results.loc[results[subj_col]==subjid, 'date'] = global_start + datetime.timedelta(
-                                                days=data_id.loc[nvisits-1,date_col].item())
+                                                days=data_id.loc[nvisits - 1, date_col].item())
                 results.loc[results[subj_col]==subjid, 'event_type'] = ''
             elif len(event_type)==0:
                 results.drop(subj_index, inplace=True)
@@ -1207,26 +1240,26 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
             results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
             results.loc[results[subj_col]==subjid, 'time2event'] = total_fu[subjid]
             results.loc[results[subj_col]==subjid, 'date'] = global_start + datetime.timedelta(
-                                            days=data_id.loc[nvisits-1,date_col].item())
+                                            days=data_id.loc[nvisits - 1, date_col].item())
 
         else:
             results.drop(subj_index, inplace=True)
 
         improvement = (results.loc[results[subj_col]==subjid, 'event_type']=='impr').sum()
         CDW = results.loc[results[subj_col]==subjid, 'event_type'].isin(('undef_CDW', 'RAW', 'PIRA')).sum()
-        undefined_CDW = (results.loc[results[subj_col]==subjid, 'event_type']=='undef_CDW').sum()
+        undef_CDW = (results.loc[results[subj_col]==subjid, 'event_type']=='undef_CDW').sum()
         RAW = (results.loc[results[subj_col]==subjid, 'event_type']=='RAW').sum()
         PIRA = (results.loc[results[subj_col]==subjid, 'event_type']=='PIRA').sum()
         summary.loc[subjid, ['event_sequence', 'improvement', 'CDW',
-                'RAW', 'PIRA', 'undefined_CDW']] = [', '.join(event_type), improvement, CDW,
-                                                     RAW, PIRA, undefined_CDW]
+                'RAW', 'PIRA', 'undef_CDW']] = [', '.join(event_type), improvement, CDW,
+                                                     RAW, PIRA, undef_CDW]
         if event.startswith('firstCDW'):
             summary.drop(columns=['improvement'], inplace=True)
 
         if verbose == 2:
             print('Event sequence: %s' %(', '.join(event_type) if len(event_type)>0 else '-'))
 
-    if verbose>=1:
+    if verbose >= 1:
         print(f'''\n---\nOutcome: {outcome.upper()}\nConfirmation {"over" if check_intermediate else "at"}: \
 {conf_days} days (-{conf_tol_days[0]} days, +{"inf" if conf_tol_days[1]==np.inf else str(conf_tol_days[1])+" days"})
 Baseline: {baseline}{" (including sub-threshold %s)" %sub_threshold_rebl if baseline!='fixed' and sub_threshold_rebl!="none" else ""}\
@@ -1264,10 +1297,18 @@ Relapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {even
     summary = summary[scolumns]
     results = results[columns]
 
+    if return_unconfirmed:
+        unconfirmed = pd.DataFrame(unconf, columns=[subj_col, 'date', 'value', 'bldate', 'blvalue',
+                                                    'closest_rel-', 'closest_rel+'])
+
     for w in warning_msgs:
         warnings.warn(w)
 
-    return summary, results.reset_index(drop=True)
+    output = summary, results.reset_index(drop=True)
+    if return_unconfirmed:
+        output = output + (unconfirmed,)
+
+    return output
 
 
 #####################################################################################
@@ -1375,18 +1416,19 @@ def is_event(x, baseline, type, outcome=None, worsening=None,
 
 #####################################################################################
 
-def value_milestone(data, milestone, value_col, date_col, subj_col,
-                   relapse=None, rsubj_col=None, rdate_col=None,
-                   validconf_col=None, conf_days=7*12, conf_tol_days=[7, 2*365.25],
-                   relapse_to_event=0, relapse_to_conf=30,
-                   verbose=0):
+def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
+                    relapse=None, rsubj_col=None, rdate_col=None, worsening=None,
+                    validconf_col=None, conf_days=7*12, conf_tol_days=[7, 2*365.25],
+                    require_sust_days=0, relapse_to_event=0, relapse_to_conf=30,
+                    impute_last_visit=0,
+                    verbose=0):
     '''
 
     Time to disability milestone.
 
     The function scans the visits in chronological order to detect the first
-    outcome value exceeding a specified disability milestone (e.g., EDSS>=6), *with confirmation*.
-    Note: "exceeding" means either value>=milestone or value<=milestone, depending on the
+    outcome value reaching or exceeding a specified disability milestone (e.g., EDSS>=6), *with confirmation*.
+    Note: "exceeding" means either value>milestone or value<milestone, depending on the
     outcome measure (see arguments ``outcome`` and ``worsening``).
 
     Parameters
@@ -1406,6 +1448,15 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
     date_col: str
         Name of data column with date of visit.
 
+    outcome: str
+        Outcome type. Must be one of the following.
+
+        - 'edss' (Expanded Disability Status Scale)
+        - 'nhpt' (Nine-Hole Peg Test)
+        - 't25fw' (Timed 25-Foot Walk)
+        - 'sdmt' (Symbol Digit Modalities Test)
+        - None (only accepted when specifying a custom ``worsening``).
+
     relapse: pandas.DataFrame
         Longitudinal data containing subject ID and relapse date (can be omitted).
 
@@ -1414,6 +1465,11 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
 
     rdate_col: str
         Name of onset date column for relapse data, if different from outcome data.
+
+    worsening: str
+        The direction of worsening ('increase' if higher values correspond to worse disease course, 'decrease' otherwise).
+        This argument is only used when ``outcome`` is set to None. Otherwise, ``worsening`` is automatically set to
+        'increase' if ``outcome`` is set to 'edss', 'nhpt', 't25fw', and to 'decrease' if ``outcome`` is set to 'sdmt'.
 
     validconf_col: str
         Name of data column specifying which visits can (True) or cannot (False) be used as confirmation visits.
@@ -1429,6 +1485,12 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
         or array-like of length 2 (different tolerance on left and right).
         The right end of the interval can be set to ``float('inf')`` (confirmation window unbounded on the right
         -- e.g., "confirmed over 12 *or more* weeks").
+
+    require_sust_days: int or float
+        Minimum number of days over which the milestone must be sustained.
+        (i.e., confirmed at *all* visits occurring in the specified period) to be retained.
+        If the milestone is sustained for the remainder of the follow-up period, it is always considered reached regardless of follow-up duration.
+        If ``require_sust_days=float('inf')``, milestone is considered reached only when sustained for the remainder of the follow-up period.
 
     relapse_to_event: int, float, or array-like of length 1 or 2
         Minimum distance from a relapse (days) for an event to be considered as such.
@@ -1446,21 +1508,30 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
         # If relapse end dates are available (``renddate_col``), the minimum distance from last relapse
         # is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
 
+    impute_last_visit: float or int
+        Imputation probability for milestone reached at last visit (i.e. with no confirmation).
+        If ``impute_last_visit=0``, milestone is never imputed (i.e., considered reached) if the value is attained at the last visit;
+        if ``impute_last_visit=1``, it is always imputed; if ``impute_last_visit=p``, ``0<p<1``, it is imputed with probability ``p``.
+        If a value ``N>1`` is passed, milestone is imputed only if occurring within
+        ``N`` days of follow-up (e.g., in case of early discontinuation).
+
     verbose: int
-        One of: 0 (print no info); 1 (print progress info).
+        One of: 0 (print no info); 1 (print concise info); 1 (print extended info).
 
     Returns
     -------
     pandas.DataFrame
         Including columns:
 
-        - ``date_col`` -- date of first reaching value >=milestone (or last date of follow-up if milestone is not reached);
-        - ``value_col`` -- first value >=milestone, if present, otherwise last value recorded.
+        - ``date_col`` -- date of first reaching or exceeding the milestone (or last date of follow-up if milestone is not reached);
+        - ``value_col`` -- first value reaching or exceeding the milestone, if present;
+        - 'time2event' -- the time taken to reach or exceed the milestone (or total follow-up length if milestone is not reached);
+        - 'observed' -- whether the milestone was reached (1) or not (0).
 
     Notes
     -----
     An event is only retained if **confirmed**, i.e., if all values *up to* the
-    confirmation visit exceed the milestone.
+    confirmation visit reach or exceed the milestone.
     Valid time windows for confirmation visits are determined by arguments
     ``conf_days``, ``conf_tol_days``, ``relapse_to_conf``.
 
@@ -1504,6 +1575,28 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
     except TypeError:
         relapse_to_conf = [relapse_to_conf, 0]
 
+    if outcome is None or outcome.lower() not in ['edss', 'nhpt', 't25fw', 'sdmt']:
+        outcome = 'outcome'
+    else:
+        outcome = outcome.lower()
+
+    if outcome in ('edss', 'nhpt', 't25fw'):
+        worsening = 'increase'
+    elif outcome=='sdmt':
+        worsening = 'decrease'
+    elif worsening is None:
+        raise ValueError('Either specify an outcome type, or specify the direction of worsening (\'increase\' or \'decrease\')')
+
+    if impute_last_visit < 0:
+        raise ValueError('`impute_last_visit` must be nonnegative')
+    elif impute_last_visit <= 1:
+        # If impute_last_visit is a probability, set no limit to follow-up length (Inf)
+        impute_max_fu = float('inf')
+    else:
+        # If impute_last_visit is a follow-up time, save the value and set probability to 1
+        impute_max_fu = impute_last_visit
+        impute_last_visit = 1
+
     # end of checks
     ###########################
 
@@ -1539,7 +1632,8 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
 
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
-    results = pd.DataFrame([[None, None]]*nsub, columns=[date_col, value_col], index=all_subj)
+    results = pd.DataFrame([[pd.NaT, np.nan, np.nan, 0]]*nsub,
+                           columns=[date_col, value_col, 'time2event', 'observed'], index=all_subj)
 
     for subjid in all_subj:
         data_id = data.loc[data[subj_col]==subjid,:].copy()
@@ -1553,11 +1647,10 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
         data_id.reset_index(inplace=True, drop=True)
 
         nvisits = len(data_id)
-        if verbose:
-            print('\nSubject #%s: %d visit%s'
-              %(subjid,nvisits,'' if nvisits==1 else 's'))
-            if any(ucounts>1):
-                print('Found multiple visits in the same day: only keeping last')
+        if verbose == 2:
+            print(f'\nSubject #{subjid}: {nvisits} visit{"" if nvisits == 1 else "s"}')
+            if any(ucounts > 1):
+                print('Found multiple visits on the same day: only keeping last')
         first_visit = data_id[date_col].min()
         if relapse is not None:
             relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].reset_index(drop=True)
@@ -1580,42 +1673,82 @@ def value_milestone(data, milestone, value_col, date_col, subj_col,
         proceed = 1
         search_idx = 0
         while proceed:
-            milestone_idx = next((x for x in range(search_idx,nvisits)
-                    if data_id.loc[x,value_col]>=milestone  # first occurring value>=milestone
+            milestone_idx = next((x for x in range(search_idx, nvisits)
+                    if ((worsening == 'increase' and data_id.loc[x, value_col] >= milestone)
+                        or (worsening == 'decrease' and data_id.loc[x, value_col] <= milestone)) # first value reaching or exceeding the milestone
                     and (data_id.loc[x, 'closest_rel-'] >= relapse_to_event[0])  # out of influence of last relapse
                     and (data_id.loc[x, 'closest_rel+'] >= relapse_to_event[1])  # out of influence of next relapse
                                   ), None)
             if milestone_idx is None: # value does not change in any subsequent visit
-                results.at[subjid,date_col] = global_start + datetime.timedelta(days=data_id.iloc[-1,:][date_col].item()) #_d_# data_id.iloc[-1,:][date_col]
-                results.at[subjid,value_col] = data_id.iloc[-1,:][value_col]
+                results.at[subjid, date_col] = global_start + datetime.timedelta(days=data_id.loc[nvisits - 1, date_col].item()) #_d_# data_id.iloc[-1,:][date_col]
+                results.at[subjid, 'time2event'] = data_id.loc[nvisits - 1, date_col] - data_id.loc[0, date_col]
                 proceed = 0
-                if verbose:
-                    print('No value >=%d in any visit: end process' %(milestone))
+                if verbose == 2:
+                    print(f'No value {">=" if worsening == "increase" else "<="} {milestone} in any visit: end process')
             else:
-                conf_idx = [[x for x in range(milestone_idx+1, nvisits)
+                conf_idx = [[x for x in range(milestone_idx + 1, nvisits)
                         if c[0] <= data_id.loc[x,date_col] - data_id.loc[milestone_idx,date_col] <= c[1] # date in confirmation range
-                        and data_id.loc[x,'closest_rel-'] >= relapse_to_conf[0] # out of influence of last relapse
-                        and data_id.loc[x,'closest_rel+'] >= relapse_to_conf[1] # out of influence of last relapse
+                        and data_id.loc[x, 'closest_rel-'] >= relapse_to_conf[0] # out of influence of last relapse
+                        and data_id.loc[x, 'closest_rel+'] >= relapse_to_conf[1] # out of influence of last relapse
                         and data_id.loc[x, validconf_col]]  # can be used as confirmation
                         for c in conf_window]
                 conf_idx = np.unique([x for i in range(len(conf_idx)) for x in conf_idx[i]])
-                if len(conf_idx)>0 and all([data_id.loc[x,value_col]
-                            >= milestone for x in range(milestone_idx+1,conf_idx[0]+1)]):
-                    results.at[subjid,date_col] = global_start + datetime.timedelta(days=data_id.loc[milestone_idx,date_col].item()) #_d_# #data_id.loc[milestone_idx,date_col]
-                    results.at[subjid,value_col] = data_id.loc[milestone_idx,value_col]
-                    proceed = 0
-                    if verbose:
-                        print('Found value >=%d: end process' %(milestone))
-                else:
-                    next_change = next((x for x in range(milestone_idx+1,nvisits)
-                    if data_id.loc[x,value_col]<milestone), None)
-                    search_idx = search_idx + 1 if next_change is None else next_change + 1
-                    if verbose:
-                        print('value >=%d not confirmed: continue search' %(milestone))
+                if verbose == 2:
+                    print(f'Found value {">=" if worsening == "increase" else "<="} {milestone} at visit no. {milestone_idx + 1} '
+                          + f'({global_start.date() + datetime.timedelta(days=data_id.loc[milestone_idx,date_col].item())}); '
+                          + f'potential confirmation visits available: no. {", ".join(["%d" %(i + 1) for i in conf_idx])}')
 
-        if results.at[subjid,date_col] is None:
-            results.at[subjid, date_col] = global_start + datetime.timedelta(days=data_id.iloc[-1,:][date_col] .item()) #_d_# data_id.iloc[-1,:][date_col]
-            results.at[subjid, value_col] = data_id.iloc[-1,:][value_col]
+                if (len(conf_idx) > 0  # confirmation visits available
+                    and all([(worsening == "increase" and data_id.loc[x, value_col] >= milestone)
+                             or (worsening == "decrease" and data_id.loc[x, value_col] <= milestone)
+                             for x in range(milestone_idx + 1, conf_idx[0] + 1)])
+                  ) or (milestone == nvisits - 1
+                        and data_id.loc[milestone_idx, date_col] - data_id.loc[0, date_col] <= impute_max_fu
+                        and np.random.binomial(1, impute_last_visit, 1)):
+
+                    if milestone_idx == nvisits - 1:
+                        conf_idx = [nvisits - 1]
+                    next_nonsust = next((x for x in range(conf_idx[0] + 1, nvisits) if
+                                         (worsening == "increase" and data_id.loc[x, value_col] < milestone)
+                                        or (worsening == "decrease" and data_id.loc[x, value_col] > milestone)), None)
+
+                    valid = 1
+                    if require_sust_days:
+                        valid = next_nonsust is None or (data_id.loc[next_nonsust, date_col]
+                                    - data_id.loc[milestone_idx, date_col]) >= require_sust_days
+
+                    if valid:
+                        results.at[subjid, date_col] = global_start + datetime.timedelta(days=data_id.loc[milestone_idx, date_col].item()) #_d_# #data_id.loc[milestone_idx,date_col]
+                        results.at[subjid, value_col] = data_id.loc[milestone_idx, value_col]
+                        results.at[subjid, 'time2event'] = data_id.loc[milestone_idx, date_col] - data_id.loc[0, date_col]
+                        results.at[subjid, 'observed'] = 1
+                        proceed = 0
+                        if verbose == 2:
+                            print(f'{"Imputed" if milestone_idx == nvisits - 1 else "Confirmed"} value '
+                              + f'{">=" if worsening == "increase" else "<="} {milestone} at visit no. {milestone_idx + 1} '
+                              + f'({global_start.date() + datetime.timedelta(days=data_id.loc[milestone_idx, date_col].item())}): end process')
+                    else:
+                        search_idx = next_nonsust + 1
+                        if verbose == 2:
+                            print(f'Value {">=" if worsening == "increase" else "<="} {milestone} confirmed '
+                            + f'but not sustained over {require_sust_days if require_sust_days < np.inf else ""}'
+                            + (' days' if require_sust_days < np.inf else 'the remainder of follow-up')
+                            + ': proceed with search')
+
+                else:
+                    next_change = next((x for x in range(milestone_idx + 1, nvisits)
+                                        if data_id.loc[x, value_col] < milestone), nvisits - 1)
+                    search_idx = next_change + 1
+                    if verbose == 2:
+                        print(f'Value >={milestone} not confirmed: proceed with search')
+
+    if verbose >= 1:
+        print(f'''\n---\nOutcome: {outcome.upper()}\nConfirmation over: \
+{conf_days} days (-{conf_tol_days[0]} days, +{"inf" if conf_tol_days[1] == np.inf else str(conf_tol_days[1]) + " days"})
+Relapse influence (event): {relapse_to_event} days
+Relapse influence (confirmation): {relapse_to_conf} days
+        ''')
+        print(f'---\nTotal subjects: {nsub}\n{results["observed"].sum()} reached the milestone {outcome}={milestone}.\n---')
 
     return results
 
@@ -1976,7 +2109,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             # data_id.loc[:rel_free_bl-1, bump_col] = data_id.loc[:rel_free_bl-1, bump_col] + bump.loc[:rel_free_bl-1]
             if verbose == 2:
                 print('Moving global baseline to first visit out of relapse influence (visit #%d, %s)'
-                      %(rel_free_bl + 1, (global_start + datetime.timedelta(
+                      %(rel_free_bl + 1, (global_start.date() + datetime.timedelta(
                                 days=data_id.loc[0, date_col].item())).date()))
         else:
             global_bl = data_id.loc[0, :].copy()
@@ -2011,13 +2144,13 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             if last_conf is not None and last_conf >= relapse_id.loc[irel, rdate_col]:
                 if verbose == 2:
                     print('Relapse #%d/%d (%s): skipped (falls within confirmation period of last %s change)'
-                          %(irel+1, len(relapse_id), (global_start + datetime.timedelta(
+                          %(irel+1, len(relapse_id), (global_start.date() + datetime.timedelta(
                                 days=relapse_id.loc[irel, rdate_col].item())).date(), outcome))
                 continue  # go to next relapse
 
             if verbose == 2:
                 print('Relapse #%d/%d (%s)' %(irel+1, len(relapse_id),
-                        (global_start + datetime.timedelta(
+                        (global_start.date() + datetime.timedelta(
                             days=relapse_id.loc[irel, rdate_col].item())).date()
                                                 ))
 
@@ -2036,7 +2169,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             if verbose == 2:
                 print('Baseline reset to last visit before the relapse and out of its influence%s (%s, %s=%.1f)'
                       %(': visit #' + str(bl_idx + 1) if bl_idx is not None else '',
-                        (global_start + datetime.timedelta(days=bl[date_col].item())).date(),
+                        (global_start.date() + datetime.timedelta(days=bl[date_col].item())).date(),
                         outcome, bl[value_col]))
 
             # Identify the first possible event
@@ -2069,7 +2202,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
                 if verbose == 2 and not stable:
                     print('%s change found: visit #%d (%s, %s=%.1f)' %(outcome, change_idx + 1,
-                                (global_start + datetime.timedelta(
+                                (global_start.date() + datetime.timedelta(
                                     days=data_id.loc[change_idx, date_col].item())).date(),
                                 outcome, data_id.loc[change_idx, value_col]))
 
@@ -2140,7 +2273,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
                         if verbose == 2:
                             print('Confirmed%s RAW on visit #%d (%s); delta = %.1f, max bump delta = %.1f'
                                   %(' sustained' if sust_raw_days > 0 else '', change_idx + 1,
-                                    (global_start + datetime.timedelta(
+                                    (global_start.date() + datetime.timedelta(
                                     days=data_id.loc[change_idx, date_col].item())).date(),
                                   value_change, bump.max()))
                     else:
@@ -2151,7 +2284,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
                         data_id.loc[change_idx:end_idx, bump_col] = data_id.loc[change_idx:end_idx, bump_col] + bump
                         if verbose == 2:
                             print('Change (visit #%d, %s) confirmed but not sustained for >=%s days\n-- only subtracting the \"bump\" (max delta = %.1f)'
-                                  %(change_idx + 1, (global_start + datetime.timedelta(
+                                  %(change_idx + 1, (global_start.date() + datetime.timedelta(
                                     days=data_id.loc[change_idx, date_col].item())).date(),
                                     sust_raw_days, bump.max()))
 
