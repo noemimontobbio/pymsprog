@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pymsprog"
-version = "1.0.0"
+version = "1.0.2"
 description = ""
 authors = ["noemi.montobbio <noemi.montobbio@gmail.com>"]
 readme = "README.md"

@@ -1,5 +1,7 @@
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
+
+import os
 
 import numpy as np
 import pandas as pd
@@ -50,9 +52,9 @@ def load_toy_data():
     >>> visits.head()
     >>> relapses.head()
     '''
-    data_path = Path(__file__).parent / 'data' / 'MSprog_toydata.xlsx'
-    #with resources.path('pymsprog.data', 'MSprog_toydata.xlsx') as data_path:
-    return pd.read_excel(data_path, sheet_name='visits'), pd.read_excel(data_path, sheet_name='relapses')
+    data_path = Path(__file__).parent / 'data' #/ 'MSprog_toydata.xlsx'
+    # return pd.read_excel(#data_path, sheet_name='visits'), pd.read_excel(data_path, sheet_name='relapses')
+    return pd.read_csv(os.path.join(data_path, 'MSprog_toydata_visits.csv')), pd.read_csv(os.path.join(data_path, 'MSprog_toydata_relapses.csv'))
 
 
 #####################################################################################

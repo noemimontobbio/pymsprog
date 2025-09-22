@@ -2,6 +2,15 @@
 
 ---
 
+# 1.0.2 — 2025-09-22
+
+Saved toy data as csv instead of xlsx to avoid dependency on openpyxl.
+
+### Changed
+- Function load_toy_data()
+
+---
+
 # 1.0.1 — 2025-09-22
 
 Align with msprog R package.
