@@ -1,3 +1,5 @@
 
-myst-parser
+# myst-parser
+myst-nb
+sphinxcontrib-bibtex
 furo
