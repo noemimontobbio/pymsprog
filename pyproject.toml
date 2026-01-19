@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "pymsprog"
-version = "1.0.2"
-description = ""
+version = "1.0.3"
+description = ""  # alternative text to "Project description" in Pypi 
 authors = ["noemi.montobbio <noemi.montobbio@gmail.com>"]
-readme = "README.md"
+readme = "pypi_description.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"

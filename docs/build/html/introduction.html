@@ -314,6 +314,7 @@ the default settings.</p>
 <span class="sd">0   2 2021-06-12</span>
 <span class="sd">1   2 2022-10-25</span>
 <span class="sd">2   3 2022-12-01</span>
+<span class="sd">3   6  2022-12-18</span>
 <span class="sd">&#39;&#39;&#39;</span>
 
 <span class="c1"># Detect events</span>
@@ -324,7 +325,7 @@ the default settings.</p>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">---</span>
 <span class="sd">Outcome: EDSS</span>
-<span class="sd">Confirmation over: [84] days (-7 days, +730.5 days)</span>
+<span class="sd">Confirmation over: 84 (-7, +730.5) days</span>
 <span class="sd">Baseline: fixed</span>
 <span class="sd">Relapse influence (baseline): [30, 0] days</span>
 <span class="sd">Relapse influence (event): [0, 0] days</span>
@@ -351,7 +352,7 @@ each event (<code class="docutils literal notranslate"><span class="pre">event='
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">---</span>
 <span class="sd">Outcome: EDSS</span>
-<span class="sd">Confirmation over: [84] days (-7 days, +730.5 days)</span>
+<span class="sd">Confirmation over: 84 (-7, +730.5) days</span>
 <span class="sd">Baseline: roving</span>
 <span class="sd">Relapse influence (baseline): [30, 0] days</span>
 <span class="sd">Relapse influence (event): [0, 0] days</span>
@@ -361,11 +362,11 @@ each event (<code class="docutils literal notranslate"><span class="pre">event='
 <span class="sd">---</span>
 <span class="sd">Total subjects: 6</span>
 <span class="sd">---</span>
-<span class="sd">Subjects with disability worsening: 4 (PIRA: 4; RAW: 1)</span>
-<span class="sd">Subjects with disability improvement: 2</span>
+<span class="sd">Subjects with CDW: 4 (PIRA: 4; RAW: 1)</span>
+<span class="sd">Subjects with CDI: 2</span>
 <span class="sd">---</span>
 <span class="sd">CDW events: 5 (PIRA: 4; RAW: 1)</span>
-<span class="sd">Improvement events: 2</span>
+<span class="sd">CDI events: 2</span>
 <span class="sd">&#39;&#39;&#39;</span>
 </pre></div>
 </div>
@@ -377,13 +378,13 @@ Complete results are stored in two <code class="docutils literal notranslate"><s
 </ol>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
 <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">  event_sequence  improvement  CDW  RAW  PIRA  undefined_CDW</span>
-<span class="sd">1           PIRA            0    1    0     1              0</span>
-<span class="sd">2      RAW, PIRA            0    2    1     1              0</span>
-<span class="sd">3                           0    0    0     0              0</span>
-<span class="sd">4     impr, PIRA            1    1    0     1              0</span>
-<span class="sd">5           PIRA            0    1    0     1              0</span>
-<span class="sd">6           impr            1    0    0     0              0</span>
+<span class="sd">  event_sequence  CDI  CDW  RAW  PIRA  undef_CDW</span>
+<span class="sd">1           PIRA    0    1    0     1          0</span>
+<span class="sd">2      RAW, PIRA    0    2    1     1          0</span>
+<span class="sd">3                   0    0    0     0          0</span>
+<span class="sd">4      CDI, PIRA    1    1    0     1          0</span>
+<span class="sd">5           PIRA    0    1    0     1          0</span>
+<span class="sd">6            CDI    1    0    0     0          0</span>
 <span class="sd">&#39;&#39;&#39;</span>
 </pre></div>
 </div>

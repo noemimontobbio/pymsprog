@@ -1,5 +1,14 @@
 
-# pymsprog: reproducible assessment of disability course in MS
+<p align="left">
+  <img src="https://raw.githubusercontent.com/noemimontobbio/py-MSprog/main/docs/source/_static/logo_py.png" width="200"/>
+</p>
+
+[//]: # ("https://raw.githubusercontent.com/noemimontobbio/py-MSprog/main/docs/source/_static/logo_py.png")
+[//]: # ("docs/source/_static/logo_py.png")
+
+![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)
+
+[📖 **Documentation and TUTORIALS**](https://pymsprog.readthedocs.io)
 
 `pymsprog` is a Python package providing tools for exhaustive and reproducible
 analysis of disability course in multiple sclerosis (MS) from longitudinal data. 

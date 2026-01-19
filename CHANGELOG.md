@@ -2,6 +2,15 @@
 
 ---
 
+# 1.0.3 — 2026-01-19
+
+Changed valid values for event argument.
+
+### Changed
+- Functions MSprog(), is_event()
+
+---
+
 # 1.0.2 — 2025-09-22
 
 Saved toy data as csv instead of xlsx to avoid dependency on openpyxl.

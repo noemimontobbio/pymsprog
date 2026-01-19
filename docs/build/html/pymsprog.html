@@ -265,7 +265,7 @@
 <span class="sig-prename descclassname"><span class="pre">pymsprog.</span></span><span class="sig-name descname"><span class="pre">MSprog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subj_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsubj_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdate_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subjects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worsening</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valuedelta_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'firstCDW'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fixed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proceed_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'firstconf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_threshold_rebl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bl_geq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_rebl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_local_extrema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validconf_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_tol_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[7,</span> <span class="pre">730.5]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">require_sust_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_intermediate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_bl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_assoc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">90</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_indep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">impute_last_visit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_stable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_unconfirmed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pymsprog.MSprog" title="Link to this definition">¶</a></dt>
 <dd><p>Assess multiple sclerosis disability course from longitudinal data.</p>
 <p>The function detects and characterises the confirmed disability worsening (CDW)
-or improvement events of an outcome measure (EDSS, NHPT, T25FW, or SDMT; or any custom outcome)
+or improvement (CDI) events of an outcome measure (EDSS, NHPT, T25FW, or SDMT; or any custom outcome)
 for one or more subjects, based on repeated assessments
 through time (and on the dates of acute episodes, if any).
 Several qualitative and quantitative options are given as arguments that can be set
@@ -283,19 +283,22 @@ by the user and reported as a complement to the results to ensure reproducibilit
 <li><p>’nhpt’ (Nine-Hole Peg Test)</p></li>
 <li><p>’t25fw’ (Timed 25-Foot Walk)</p></li>
 <li><p>’sdmt’ (Symbol Digit Modalities Test)</p></li>
-<li><p>None (only accepted when specifying a custom <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code>).</p></li>
+<li><p>None (only accepted when specifying custom <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> and <code class="docutils literal notranslate"><span class="pre">worsening</span></code>).</p></li>
 </ul>
+<p>Outcome type determines a default direction of worsening (see <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument)
+and default definition of clinically meaningful change given the reference value
+(using the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>).</p>
 </p></li>
 <li><p><strong>relapse</strong> (<em>pandas.DataFrame</em>) – Longitudinal data containing subject ID and relapse onset dates (if any).</p></li>
 <li><p><strong>rsubj_col</strong> (<em>str</em>) – Name of subject ID column for relapse data, if different from outcome data.</p></li>
 <li><p><strong>rdate_col</strong> (<em>str</em>) – Name of onset date column for relapse data, if different from outcome data.</p></li>
 <li><p><strong>subjects</strong> (<em>array-like</em>) – Subset of subject IDs to analyse. If none is specified, all subjects listed in <code class="docutils literal notranslate"><span class="pre">data</span></code> are included.</p></li>
-<li><p><strong>delta_fun</strong> (<em>function</em>) – Custom function specifying the minimum shift in the outcome measure that counts as a valid change
-from the provided reference value.
-The function provided must take a numeric value (reference score) as input, and return a numeric
-value corresponding to the minimum shift from baseline.
-If none is specified (default), the user must provide a non-None value for the <code class="docutils literal notranslate"><span class="pre">outcome</span></code> argument
-in order to use the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>.</p></li>
+<li><p><strong>delta_fun</strong> (<em>function</em>) – Custom function specifying the minimum clinically meaningful change
+in the outcome measure from the provided reference value.
+The function provided must take a numeric value (reference score) as input,
+and return a numeric value corresponding to the minimum shift from baseline.
+If none is specified (default), the user must provide a non-None value for
+the <code class="docutils literal notranslate"><span class="pre">outcome</span></code> argument (see above) in order to use the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>.</p></li>
 <li><p><strong>worsening</strong> (<em>str</em>) – The direction of worsening (‘increase’ if higher values correspond to worse disease course, ‘decrease’ otherwise).
 This argument is only used when <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to None. Otherwise, <code class="docutils literal notranslate"><span class="pre">worsening</span></code> is automatically set to
 ‘increase’ if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘edss’, ‘nhpt’, ‘t25fw’, and to ‘decrease’ if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘sdmt’.</p></li>
@@ -312,24 +315,23 @@ In such a case, <a class="reference internal" href="#pymsprog.MSprog" title="pym
 </p></li>
 <li><p><strong>event</strong> (<em>str</em>) – <p>Specifies which events to detect. Must be one of the following.</p>
 <ul>
-<li><p>’firstCDW’ (first confirmed disability worsening (CDW), default);</p></li>
-<li><p>’first’ (only the very first confirmed event – improvement or worsening);</p></li>
-<li><p>’firsteach’ (first confirmed disability improvement and first CDW – in chronological order);</p></li>
-<li><p>’firstCDWtype’ (first CDW of each kind – PIRA, RAW, and undefined, in chronological order);</p></li>
+<li><p>’firstCDW’ (first CDW, default)</p></li>
+<li><p>’firstCDI’ (first CDI)</p></li>
+<li><p>’first’ (only the very first confirmed event – CDI or CDW)</p></li>
 <li><p>’firstPIRA’ (first PIRA);</p></li>
 <li><p>’firstRAW’ (first RAW);</p></li>
-<li><p>’multiple’ (all events in chronological order).</p></li>
+<li><p>’multiple’ (all confirmed events in chronological order).</p></li>
 </ul>
 </p></li>
 <li><p><strong>baseline</strong> (<em>str</em>) – <p>Specifies the baseline scheme. Must be one of the following.</p>
 <ul>
 <li><p>’fixed’: first valid outcome value, default;</p></li>
-<li><p>’roving_impr’: updated after every confirmed disability improvement (to the visit determined by <code class="docutils literal notranslate"><span class="pre">proceed_from</span></code>);
+<li><p>’roving_impr’: updated after every CDI (to the visit determined by <code class="docutils literal notranslate"><span class="pre">proceed_from</span></code>);
 suitable for a first-CDW setting to discard fluctuations around baseline – not recommended for randomised data;</p></li>
 <li><p>’roving_wors’: updated after every CDW (to the visit determined by <code class="docutils literal notranslate"><span class="pre">proceed_from</span></code>);
 suitable when searching for a specific type of CDW (i.e., when <code class="docutils literal notranslate"><span class="pre">event</span></code> is set to ‘firstPIRA’ or ‘firstRAW’);</p></li>
-<li><p>’roving’: updated after each improvement or worsening event to the visit determined by <code class="docutils literal notranslate"><span class="pre">proceed_from</span></code>;
-suitable for a multiple-event setting (i.e., when <code class="docutils literal notranslate"><span class="pre">event</span></code> is set to ‘multiple’, ‘firsteach’, or ‘firstCDWtype’)
+<li><p>’roving’: updated after each CDI or CDW event to the visit determined by <code class="docutils literal notranslate"><span class="pre">proceed_from</span></code>;
+suitable for a multiple-event setting (i.e., when <code class="docutils literal notranslate"><span class="pre">event</span></code> is set to ‘multiple’)
 or when searching for a specific type of CDW (i.e., when <code class="docutils literal notranslate"><span class="pre">event</span></code> is set to ‘firstPIRA’ or ‘firstRAW’)
 – not recommended for randomised data.</p></li>
 </ul>
@@ -350,13 +352,16 @@ confirmed disability event, the baseline is moved to:</p>
 Must be one of the following.</p>
 <ul>
 <li><p>’event’: any confirmed sub-threshold event (i.e., any <em>confirmed</em> change in the outcome measure,
-regardless of <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code>) can potentially trigger a re-baseline;</p></li>
+possibly below clinically meaningful threshold) can potentially trigger a re-baseline;</p></li>
 <li><p>’improvement’: any confirmed sub-threshold improvement (i.e., any <em>confirmed</em> improvement
-in the outcome measure, regardless of <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code>) can potentially trigger a re-baseline;</p></li>
+in the outcome measure, possibly below clinically meaningful threshold) can potentially trigger a re-baseline;</p></li>
 <li><p>’worsening’: any confirmed sub-threshold worsening (i.e., any <em>confirmed</em> worsening in the
-outcome measure, regardless of <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code>) can potentially trigger a re-baseline;</p></li>
-<li><p>’none’: only use valid confirmed events (as per <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code>) for rebaseline.</p></li>
+outcome measure, possibly below clinically meaningful threshold) can potentially trigger a re-baseline;</p></li>
+<li><p>’none’: only use clinically meaningful confirmed changes for rebaseline.</p></li>
 </ul>
+<blockquote>
+<div><p>See <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> argument and function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a> for more details.</p>
+</div></blockquote>
 </p></li>
 <li><p><strong>bl_geq</strong> (<em>bool</em>) – This argument is only used if the baseline is moved.
 If True, the new reference value must always be greater or equal than the previous one;
@@ -375,7 +380,7 @@ This controls for cases where the outcome has an undulating course.</p>
 <p>The following argument values are accepted.</p>
 <ul>
 <li><p>’none’: local extrema are always accepted as valid baseline values;</p></li>
-<li><p>’delta’: the baseline cannot be placed at a <em>strict</em> local minimum or maximum;</p></li>
+<li><p>’strict’: the baseline cannot be placed at a <em>strict</em> local minimum or maximum;</p></li>
 <li><p>’all’: the baseline cannot be placed at a local minimum or maximum.</p></li>
 </ul>
 </p></li>
@@ -384,10 +389,12 @@ The input data does not necessarily have to include such a column.
 If not specified (<code class="docutils literal notranslate"><span class="pre">validconf_col=None</span></code>), all visits are potentially used as confirmation visits.</p></li>
 <li><p><strong>conf_days</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em>) – Period before confirmation (days). Can be a single value or array-like of any length if multiple
 windows are to be considered.</p></li>
-<li><p><strong>conf_tol_days</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em>) – Tolerance window for confirmation visit (days); can be a single value (same tolerance on left and right)
+<li><p><strong>conf_tol_days</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em><em>, or </em><em>dict</em>) – Tolerance window for confirmation visit (days); can be a single value (same tolerance on left and right)
 or array-like of length 2 (different tolerance on left and right).
 The right end of the interval can be set to <code class="docutils literal notranslate"><span class="pre">float('inf')</span></code> (confirmation window unbounded on the right
-– e.g., “confirmed over 12 <em>or more</em> weeks”).</p></li>
+– e.g., “confirmed over 12 <em>or more</em> weeks”).
+It can also be given as a dictionary with the values in <code class="docutils literal notranslate"><span class="pre">conf_days</span></code> as keys
+and different tolerance windows as values.</p></li>
 <li><p><strong>require_sust_days</strong> (<em>int</em><em> or </em><em>float</em>) – Minimum number of days over which a confirmed change must be sustained
 (i.e., confirmed at <em>all</em> visits occurring in the specified period) to be retained as an event.
 Events sustained for the remainder of the follow-up period are always retained regardless of follow-up duration.
@@ -427,15 +434,17 @@ Can be a single value (maximum distance from <em>last</em> relapse) or array-lik
 The dictionary specifies the intervals around (any subset of) the three checkpoints:</p>
 <ul>
 <li><p>’prec’: a visit preceding the event – see below;</p></li>
-<li><p>’event’: the disability worsening event;</p></li>
+<li><p>’event’: the disability worsening event onset;</p></li>
 <li><p>’conf’: the first available confirmation visit.</p></li>
 </ul>
 <p>The dictionary can also optionally contain a key-value pair specifying how to choose ‘prec’:</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">'prec_type':</span> <span class="pre">'baseline'</span></code> → ‘prec’ is the current baseline;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">'prec_type':</span> <span class="pre">'last'</span></code> → ‘prec’ is the last visit before the event;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">'prec_type':</span> <span class="pre">'last_lower'</span></code> → ‘prec’ is the last pre-worsening visit:
-<code class="docutils literal notranslate"><span class="pre">i</span></code> such that <code class="docutils literal notranslate"><span class="pre">outcome[event]</span> <span class="pre">-</span> <span class="pre">outcome[i]</span> <span class="pre">&gt;=</span> <span class="pre">delta_fun(outcome[i])</span></code> (if <code class="docutils literal notranslate"><span class="pre">worsening='increase'</span></code>, the opposite otherwise)
+<li><p><code class="docutils literal notranslate"><span class="pre">'prec_type':</span> <span class="pre">'last'</span></code> → ‘prec’ is the last visit before event onset;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'prec_type':</span> <span class="pre">'last_lower'</span></code> → ‘prec’ is the last visit before event onset
+with a clinically meaningful score distance from the event score:
+<code class="docutils literal notranslate"><span class="pre">i</span></code> such that <code class="docutils literal notranslate"><span class="pre">outcome[event]</span> <span class="pre">-</span> <span class="pre">outcome[i]</span> <span class="pre">&gt;=</span> <span class="pre">delta_fun(outcome[i])</span></code>
+(if <code class="docutils literal notranslate"><span class="pre">worsening='increase'</span></code>, the opposite otherwise)
 and same for the confirmation visit.</p></li>
 </ul>
 <p>If ‘prec_type’ is not in the dictionary keys, ‘prec’ is assumed to be the current baseline.</p>
@@ -474,7 +483,7 @@ with ‘time2event’ = total follow up.</p></li>
 </dl>
 <p class="rubric">Notes</p>
 <p>The events are detected sequentially by scanning the outcome values in chronological order.
-Valid time windows for confirmation visits are determined by arguments
+Time windows for confirmation visits are determined by arguments
 <code class="docutils literal notranslate"><span class="pre">conf_days</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days</span></code>, <code class="docutils literal notranslate"><span class="pre">relapse_to_conf</span></code>.
 CDW events are classified as relapse-associated or relapse-independent based on their relative timing
 with respect to the relapses. Specifically, relapse-associated worsening (RAW) events are defined as
@@ -499,7 +508,10 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 <dl class="py function">
 <dt class="sig sig-object py" id="pymsprog.compute_delta">
 <span class="sig-prename descclassname"><span class="pre">pymsprog.</span></span><span class="sig-name descname"><span class="pre">compute_delta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baseline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'edss'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pymsprog.compute_delta" title="Link to this definition">¶</a></dt>
-<dd><p>Definition of progression deltas for different tests.</p>
+<dd><p>Definition of default minimum clinically meaningful shift for different scales
+(EDSS, NHPT, T25FW, or SDMT).</p>
+<p>Note: default thresholds are meant to apply to all versions of each test
+(e.g., dominant or non-dominant hand for NHPT, best time or median of two trials, etc.).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -508,7 +520,10 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Minimum delta corresponding to valid change in the outcome measure.</p>
+<dd class="field-even"><p>Minimum clinically meaningful change from the provided baseline value. Specifically:
+- EDSS: 1.5 if <cite>baseline`=0, 1 if 0&lt;`baseline`&lt;=5.0, 0.5 if `baseline</cite>&gt;5.0
+- NHPT and T25FW: 20`%` of <cite>baseline</cite>
+- SDMT: either 3 points or 10`%` of <cite>baseline</cite>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
@@ -526,9 +541,22 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 <li><p><strong>x</strong> (<em>float</em>) – New value.</p></li>
 <li><p><strong>baseline</strong> (<em>float</em>) – Baseline value.</p></li>
 <li><p><strong>type</strong> (<em>str</em>) – ‘wors’ or ‘impr’ or ‘change’.</p></li>
-<li><p><strong>outcome</strong> (<em>str</em>) – Type of test (one of: ‘edss’,’nhpt’,’t25fw’,’sdmt’).</p></li>
-<li><p><strong>worsening</strong> (<em>'increase'</em><em> or </em><em>'decrease'. If outcome is specified</em><em>, </em><em>it is automatically assigned</em>) – (‘increase’ for edss, nhpt, t25fw; ‘decrease’ for sdmt)</p></li>
-<li><p><strong>baseline_delta</strong> (<em>float</em>) – Baseline value to use to compute delta, if different from baseline.</p></li>
+<li><p><strong>outcome</strong> (<em>str</em>) – Outcome type (one of: ‘edss’,’nhpt’,’t25fw’,’sdmt’, None).
+Outcome type (if not None) determines a default direction of worsening (see <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument)
+and default definition of clinically meaningful change given the reference value
+(using the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>).</p></li>
+<li><p><strong>worsening</strong> (<em>str</em>) – ‘increase’ or ‘decrease’. If outcome is specified, the argument is ignored
+and the direction of worsening is automatically assigned
+(‘increase’ for edss, nhpt, t25fw; ‘decrease’ for sdmt)</p></li>
+<li><p><strong>sub_threshold</strong> (<em>bool</em>) – Whether to retain events below the clinically meaningful change from baseline.</p></li>
+<li><p><strong>delta_fun</strong> (<em>function</em>) – Custom function specifying the minimum clinically meaningful change
+in the outcome measure from the provided reference value.
+The function provided must take a numeric value (reference score) as input,
+and return a numeric value corresponding to the minimum shift from baseline.
+If none is specified (default), the user must provide a non-None value for
+the <code class="docutils literal notranslate"><span class="pre">outcome</span></code> argument (see above) in order to use the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>.
+The argument is ignored if <code class="docutils literal notranslate"><span class="pre">sub_threshold=True</span></code>.</p></li>
+<li><p><strong>baseline_delta</strong> (<em>float</em>) – Baseline value to use to compute clinically meaningful change, if different from baseline.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -598,18 +626,21 @@ and a relapse-independent component (RIC).</p>
 <li><p>’nhpt’ (Nine-Hole Peg Test)</p></li>
 <li><p>’t25fw’ (Timed 25-Foot Walk)</p></li>
 <li><p>’sdmt’ (Symbol Digit Modalities Test)</p></li>
-<li><p>None (only accepted when specifying a custom <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code>)</p></li>
+<li><p>None (only accepted when specifying custom <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> and <code class="docutils literal notranslate"><span class="pre">worsening</span></code>)</p></li>
 </ul>
+<p>Outcome type determines a default direction of worsening (see <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument)
+and default definition of clinically meaningful change given the reference value
+(using the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>).</p>
 </p></li>
 <li><p><strong>relapse</strong> (<em>pandas.DataFrame</em>) – Longitudinal data containing subject ID and relapse date.</p></li>
 <li><p><strong>rsubj_col</strong> (<em>str</em>) – Name of subject ID column for relapse data, if different from outcome data.</p></li>
 <li><p><strong>rdate_col</strong> (<em>str</em>) – Name of onset date column for relapse data, if different from outcome data.</p></li>
-<li><p><strong>delta_fun</strong> (<em>function</em>) – Custom function specifying the minimum shift in the outcome measure that counts as a valid change
-from the current reference value.
-The function provided must take a numeric value (reference score) as input, and return a numeric
-value corresponding to the minimum shift from baseline.
-If none is specified (default), the user must provide a non-None value for the <code class="docutils literal notranslate"><span class="pre">outcome</span></code> argument
-in order to use the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>.</p></li>
+<li><p><strong>delta_fun</strong> (<em>function</em>) – Custom function specifying the minimum clinically meaningful change
+in the outcome measure from the provided reference value.
+The function provided must take a numeric value (reference score) as input,
+and return a numeric value corresponding to the minimum shift from baseline.
+If none is specified (default), the user must provide a non-None value for
+the <code class="docutils literal notranslate"><span class="pre">outcome</span></code> argument (see above) in order to use the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>.</p></li>
 <li><p><strong>worsening</strong> (<em>str</em>) – The direction of worsening (‘increase’ if higher values correspond to worse disease course, ‘decrease’ otherwise).
 This argument is only used when <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to None. Otherwise, <code class="docutils literal notranslate"><span class="pre">worsening</span></code> is automatically set to
 ‘increase’ if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘edss’, ‘nhpt’, ‘t25fw’, and to ‘decrease’ if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘sdmt’.</p></li>
@@ -733,6 +764,7 @@ outcome measure (see arguments <code class="docutils literal notranslate"><span 
 <li><p>’sdmt’ (Symbol Digit Modalities Test)</p></li>
 <li><p>None (only accepted when specifying a custom <code class="docutils literal notranslate"><span class="pre">worsening</span></code>).</p></li>
 </ul>
+<p>Outcome type determines a default direction of worsening (see <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument).</p>
 </p></li>
 <li><p><strong>relapse</strong> (<em>pandas.DataFrame</em>) – Longitudinal data containing subject ID and relapse date (can be omitted).</p></li>
 <li><p><strong>rsubj_col</strong> (<em>str</em>) – Name of subject ID column for relapse data, if different from outcome data.</p></li>
@@ -790,7 +822,7 @@ If a value <code class="docutils literal notranslate"><span class="pre">N&gt;1</
 <p class="rubric">Notes</p>
 <p>An event is only retained if <strong>confirmed</strong>, i.e., if all values <em>up to</em> the
 confirmation visit reach or exceed the milestone.
-Valid time windows for confirmation visits are determined by arguments
+Time windows for confirmation visits are determined by arguments
 <code class="docutils literal notranslate"><span class="pre">conf_days</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days</span></code>, <code class="docutils literal notranslate"><span class="pre">relapse_to_conf</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>

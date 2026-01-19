@@ -1,5 +1,5 @@
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 import os
 
@@ -60,24 +60,24 @@ def load_toy_data():
 #####################################################################################
 
 def MSprog(data, subj_col, value_col, date_col, outcome,
-            relapse=None, rsubj_col=None, rdate_col=None,  # renddate_col=None,
-            subjects=None, delta_fun=None, worsening=None, valuedelta_col=None,
-            event='firstCDW', baseline='fixed', proceed_from='firstconf',
-            sub_threshold_rebl='none',
-            bl_geq=False, relapse_rebl=False,  skip_local_extrema='none',
-            validconf_col=None, conf_days=12 * 7, conf_tol_days=[7, 2 * 365.25],
-            require_sust_days=0, check_intermediate=True,
-            relapse_to_bl=30, relapse_to_event=0, relapse_to_conf=30,
-            relapse_assoc=90, relapse_indep=None,
-            impute_last_visit=0,
-            include_dates=False, include_value=False, include_stable=True,
-            return_unconfirmed=False, verbose=1):
+           relapse=None, rsubj_col=None, rdate_col=None,  # renddate_col=None,
+           subjects=None, delta_fun=None, worsening=None, valuedelta_col=None,
+           event='firstCDW', baseline='fixed', proceed_from='firstconf',
+           sub_threshold_rebl='none',
+           bl_geq=False, relapse_rebl=False,  skip_local_extrema='none',
+           validconf_col=None, conf_days=12 * 7, conf_tol_days=[7, 2 * 365.25],
+           require_sust_days=0, check_intermediate=True,
+           relapse_to_bl=30, relapse_to_event=0, relapse_to_conf=30,
+           relapse_assoc=90, relapse_indep=None,
+           impute_last_visit=0,
+           include_dates=False, include_value=False, include_stable=True,
+           return_unconfirmed=False, verbose=1):
     '''
 
     Assess multiple sclerosis disability course from longitudinal data.
 
     The function detects and characterises the confirmed disability worsening (CDW)
-    or improvement events of an outcome measure (EDSS, NHPT, T25FW, or SDMT; or any custom outcome)
+    or improvement (CDI) events of an outcome measure (EDSS, NHPT, T25FW, or SDMT; or any custom outcome)
     for one or more subjects, based on repeated assessments
     through time (and on the dates of acute episodes, if any).
     Several qualitative and quantitative options are given as arguments that can be set
@@ -104,7 +104,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         - 'nhpt' (Nine-Hole Peg Test)
         - 't25fw' (Timed 25-Foot Walk)
         - 'sdmt' (Symbol Digit Modalities Test)
-        - None (only accepted when specifying a custom ``delta_fun``).
+        - None (only accepted when specifying custom ``delta_fun`` and ``worsening``).
+
+        Outcome type determines a default direction of worsening (see ``worsening`` argument)
+        and default definition of clinically meaningful change given the reference value
+        (using the built-in function :func:`compute_delta()`).
 
     relapse: pandas.DataFrame
         Longitudinal data containing subject ID and relapse onset dates (if any).
@@ -119,12 +123,12 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         Subset of subject IDs to analyse. If none is specified, all subjects listed in ``data`` are included.
 
     delta_fun: function
-        Custom function specifying the minimum shift in the outcome measure that counts as a valid change
-        from the provided reference value.
-        The function provided must take a numeric value (reference score) as input, and return a numeric
-        value corresponding to the minimum shift from baseline.
-        If none is specified (default), the user must provide a non-None value for the ``outcome`` argument
-        in order to use the built-in function :func:`compute_delta()`.
+        Custom function specifying the minimum clinically meaningful change
+        in the outcome measure from the provided reference value.
+        The function provided must take a numeric value (reference score) as input,
+        and return a numeric value corresponding to the minimum shift from baseline.
+        If none is specified (default), the user must provide a non-None value for
+        the ``outcome`` argument (see above) in order to use the built-in function :func:`compute_delta()`.
 
     worsening: str
         The direction of worsening ('increase' if higher values correspond to worse disease course, 'decrease' otherwise).
@@ -146,24 +150,23 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     event: str
         Specifies which events to detect. Must be one of the following.
 
-        - 'firstCDW' (first confirmed disability worsening (CDW), default);
-        - 'first' (only the very first confirmed event -- improvement or worsening);
-        - 'firsteach' (first confirmed disability improvement and first CDW -- in chronological order);
-        - 'firstCDWtype' (first CDW of each kind -- PIRA, RAW, and undefined, in chronological order);
+        - 'firstCDW' (first CDW, default)
+        - 'firstCDI' (first CDI)
+        - 'first' (only the very first confirmed event -- CDI or CDW)
         - 'firstPIRA' (first PIRA);
         - 'firstRAW' (first RAW);
-        - 'multiple' (all events in chronological order).
+        - 'multiple' (all confirmed events in chronological order).
 
     baseline: str
         Specifies the baseline scheme. Must be one of the following.
 
         - 'fixed': first valid outcome value, default;
-        - 'roving_impr': updated after every confirmed disability improvement (to the visit determined by ``proceed_from``);
+        - 'roving_impr': updated after every CDI (to the visit determined by ``proceed_from``);
           suitable for a first-CDW setting to discard fluctuations around baseline -- not recommended for randomised data;
         - 'roving_wors': updated after every CDW (to the visit determined by ``proceed_from``);
           suitable when searching for a specific type of CDW (i.e., when ``event`` is set to 'firstPIRA' or 'firstRAW');
-        - 'roving': updated after each improvement or worsening event to the visit determined by ``proceed_from``;
-          suitable for a multiple-event setting (i.e., when ``event`` is set to 'multiple', 'firsteach', or 'firstCDWtype')
+        - 'roving': updated after each CDI or CDW event to the visit determined by ``proceed_from``;
+          suitable for a multiple-event setting (i.e., when ``event`` is set to 'multiple')
           or when searching for a specific type of CDW (i.e., when ``event`` is set to 'firstPIRA' or 'firstRAW')
           -- not recommended for randomised data.
 
@@ -184,12 +187,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         Must be one of the following.
 
         - 'event': any confirmed sub-threshold event (i.e., any *confirmed* change in the outcome measure,
-          regardless of ``delta_fun``) can potentially trigger a re-baseline;
+          possibly below clinically meaningful threshold) can potentially trigger a re-baseline;
         - 'improvement': any confirmed sub-threshold improvement (i.e., any *confirmed* improvement
-          in the outcome measure, regardless of ``delta_fun``) can potentially trigger a re-baseline;
+          in the outcome measure, possibly below clinically meaningful threshold) can potentially trigger a re-baseline;
         - 'worsening': any confirmed sub-threshold worsening (i.e., any *confirmed* worsening in the
-          outcome measure, regardless of ``delta_fun``) can potentially trigger a re-baseline;
-        - 'none': only use valid confirmed events (as per ``delta_fun``) for rebaseline.
+          outcome measure, possibly below clinically meaningful threshold) can potentially trigger a re-baseline;
+        - 'none': only use clinically meaningful confirmed changes for rebaseline.
+         See ``delta_fun`` argument and function :func:`compute_delta()` for more details.
 
     bl_geq: bool
         This argument is only used if the baseline is moved.
@@ -213,7 +217,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         The following argument values are accepted.
         
         - 'none': local extrema are always accepted as valid baseline values;
-        - 'delta': the baseline cannot be placed at a *strict* local minimum or maximum;
+        - 'strict': the baseline cannot be placed at a *strict* local minimum or maximum;
         - 'all': the baseline cannot be placed at a local minimum or maximum.
 
     validconf_col: str
@@ -225,11 +229,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         Period before confirmation (days). Can be a single value or array-like of any length if multiple
         windows are to be considered.
 
-    conf_tol_days: int, float, or array-like of length 1 or 2
+    conf_tol_days: int, float, or array-like of length 1 or 2, or dict
         Tolerance window for confirmation visit (days); can be a single value (same tolerance on left and right)
         or array-like of length 2 (different tolerance on left and right).
         The right end of the interval can be set to ``float('inf')`` (confirmation window unbounded on the right
         -- e.g., "confirmed over 12 *or more* weeks").
+        It can also be given as a dictionary with the values in ``conf_days`` as keys
+        and different tolerance windows as values.
 
     require_sust_days: int or float
         Minimum number of days over which a confirmed change must be sustained
@@ -283,15 +289,17 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         The dictionary specifies the intervals around (any subset of) the three checkpoints:
 
         - 'prec': a visit preceding the event -- see below;
-        - 'event': the disability worsening event;
+        - 'event': the disability worsening event onset;
         - 'conf': the first available confirmation visit.
 
         The dictionary can also optionally contain a key-value pair specifying how to choose 'prec':
 
         - ``'prec_type': 'baseline'`` → 'prec' is the current baseline;
-        - ``'prec_type': 'last'`` → 'prec' is the last visit before the event;
-        - ``'prec_type': 'last_lower'`` → 'prec' is the last pre-worsening visit:
-          ``i`` such that ``outcome[event] - outcome[i] >= delta_fun(outcome[i])`` (if ``worsening='increase'``, the opposite otherwise)
+        - ``'prec_type': 'last'`` → 'prec' is the last visit before event onset;
+        - ``'prec_type': 'last_lower'`` → 'prec' is the last visit before event onset
+          with a clinically meaningful score distance from the event score:
+          ``i`` such that ``outcome[event] - outcome[i] >= delta_fun(outcome[i])``
+          (if ``worsening='increase'``, the opposite otherwise)
           and same for the confirmation visit.
         
         If 'prec_type' is not in the dictionary keys, 'prec' is assumed to be the current baseline.
@@ -337,7 +345,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     Notes
     -----
     The events are detected sequentially by scanning the outcome values in chronological order.
-    Valid time windows for confirmation visits are determined by arguments
+    Time windows for confirmation visits are determined by arguments
     ``conf_days``, ``conf_tol_days``, ``relapse_to_conf``.
     CDW events are classified as relapse-associated or relapse-independent based on their relative timing
     with respect to the relapses. Specifically, relapse-associated worsening (RAW) events are defined as
@@ -378,13 +386,19 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     except TypeError:
        conf_days = [conf_days]
 
-    # If conf_tol_days is a single value, duplicate it (equal left and right tolerance)
-    try:
-        _ = (e for e in conf_tol_days) # check if it's iterable
-        if len(conf_tol_days) == 1:
-            conf_tol_days = [conf_tol_days[0], conf_tol_days[0]]
-    except TypeError:
-        conf_tol_days = [conf_tol_days, conf_tol_days]
+    # If conf_tol_days is not a dict, made it into one
+    if not isinstance(conf_tol_days, dict):
+        conf_tol_days = {c: conf_tol_days for c in conf_days}
+    elif any([c not in conf_tol_days.keys() for c in conf_days]):
+        raise ValueError('If `conf_tol_days` is a dictionary, all values in conf_days must be in the keys.')
+    # If any entry is a single value, duplicate it (equal left and right tolerance)
+    for c in conf_tol_days.keys():
+        try:
+            _ = (e for e in conf_tol_days[c]) # check if it's iterable
+            if len(conf_tol_days[c]) == 1:
+                conf_tol_days[c] = [conf_tol_days[c][0], conf_tol_days[c][0]]
+        except TypeError:
+            conf_tol_days[c] = [conf_tol_days[c], conf_tol_days[c]]
 
     # If relapse_to_bl is a single value, set right bound to zero
     try:
@@ -423,10 +437,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     else:
         outcome = outcome.lower()
 
-    if event not in ('firstCDW', 'first', 'firsteach', 'firstCDWtype',
-    'firstPIRA', 'firstRAW', 'multiple'):
+    if event not in ('firstCDW', 'first', 'firstCDI', 'firstPIRA', 'firstRAW', 'multiple'):
         raise ValueError('Invalid value for `event` argument. Valid values: \'firstCDW\', \'first\', '
-                            + '\'firsteach\', \'firstCDWtype\', \'firstPIRA\', \'multiple\'.')
+                            + '\'firstCDI\', \'firstPIRA\', \'multiple\'.')
 
     if baseline not in ('fixed', 'roving_impr', 'roving_wors', 'roving'):
         raise ValueError('Invalid value for `baseline` argument. Valid values: '
@@ -439,8 +452,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         raise ValueError('Invalid value for `sub_threshold_rebl` argument. Valid values: '
                         + '\'event\', \'improvement\', \'worsening\', \'none\'.')
 
-    if skip_local_extrema not in ('none', 'delta', 'all'):
-        raise ValueError('Invalid value for `skip_local_extrema` argument. Valid values: \'none\', \'delta\', \'all\'.')
+    if skip_local_extrema not in ('none', 'strict', 'all'):
+        raise ValueError('Invalid value for `skip_local_extrema` argument. Valid values: \'none\', \'strict\', \'all\'.')
 
     if relapse_indep is None:
         relapse_indep = {'prec': (0, 0), 'event': (90, 30), 'conf': (90, 30), 'prec_type': 'baseline'}
@@ -485,7 +498,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
     if outcome in ('edss', 'nhpt', 't25fw'):
         worsening = 'increase'
-    elif outcome=='sdmt':
+    elif outcome == 'sdmt':
         worsening = 'decrease'
     elif worsening is None:
         raise ValueError('Either specify an outcome type, or specify the direction of worsening (\'increase\' or \'decrease\')')
@@ -526,15 +539,15 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     # Check if values are in correct range
     if outcome is not None:
         for vcol in np.unique([value_col, valuedelta_col]):
-            if (data[vcol]<0).any():
+            if (data[vcol] < 0).any():
+                raise ValueError('negative %s scores' %outcome.upper())
+            elif outcome == 'edss' and (data[vcol] > 10).any():
                 raise ValueError('invalid %s scores' %outcome.upper())
-            elif outcome=='edss' and (data[vcol]>10).any():
-                raise ValueError('invalid %s scores' %outcome.upper())
-            elif outcome=='sdmt' and (data[vcol]>110).any():
+            elif outcome == 'sdmt' and (data[vcol] > 110).any():
                 raise ValueError('SDMT scores >110')
-            elif outcome=='nhpt' and (data[vcol]>300).any():
+            elif outcome == 'nhpt' and (data[vcol] > 300).any():
                 warning_msgs.append('NHPT scores >300')
-            elif outcome=='t25fw' and (data[vcol]>180).any():
+            elif outcome == 't25fw' and (data[vcol] > 180).any():
                 warning_msgs.append('T25FW scores >180')
 
     #####################################################################################
@@ -555,7 +568,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     # results[subj_col] = np.repeat(all_subj, max_nevents)
     # results['nevent'] = np.tile(np.arange(1, max_nevents + 1), nsub)
 
-    summary = pd.DataFrame([[''] + [0]*5]*nsub, columns=['event_sequence', 'improvement', 'CDW',
+    summary = pd.DataFrame([[''] + [0]*5]*nsub, columns=['event_sequence', 'CDI', 'CDW',
                                                   'RAW', 'PIRA', 'undef_CDW'], index=all_subj)
     if return_unconfirmed:
         unconf = []
@@ -621,7 +634,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
         bl_idx, search_idx = 0, 1 # baseline index and index of where we are in the search
         proceed = 1
-        conf_window = [(int(c) - conf_tol_days[0], int(c) + conf_tol_days[1]) for c in conf_days]
+        conf_window = [(int(c) - conf_tol_days[c][0], int(c) + conf_tol_days[c][1]) for c in conf_days]
         irel = 0 if nrel==0 else next((r for r in range(nrel) if relapse_dates[r] > data_id.loc[bl_idx, date_col]), None)
         bl_last = None
 
@@ -779,7 +792,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     if valid_impr:
                         sust_idx = nvisits-1 if next_nonsust is None else next_nonsust-1
 
-                        event_type.append('impr')
+                        event_type.append('CDI')
                         event_index.append(change_idx)
                         bldate.append(global_start + datetime.timedelta(days=bl[date_col].item())) #_d_#
                         blvalue.append(bl[value_col])
@@ -1156,9 +1169,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
             if proceed and (
                 (event == 'first' and len(event_type)>1)
-                or (event == 'firsteach' and ('impr' in event_type) and (('RAW' in event_type) or ('PIRA' in event_type) or ('undef_CDW' in event_type)))
                 or (event == 'firstCDW' and (('RAW' in event_type) or ('PIRA' in event_type) or ('undef_CDW' in event_type)))
-                or (event == 'firstCDWtype' and ('RAW' in event_type) and ('PIRA' in event_type))  # and ('undef_CDW' in event_type)
+                or (event == 'firstCDI' and ('CDI' in event_type))
                 or (event == 'firstPIRA' and ('PIRA' in event_type))
                 or (event == 'firstRAW' and ('RAW' in event_type))
                         ):
@@ -1189,17 +1201,15 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
             event_type = [event_type[i] for i in event_order]
 
             if event.startswith('first'):
-                impr_idx = next((x for x in range(len(event_type)) if event_type[x]=='impr'), None)
+                impr_idx = next((x for x in range(len(event_type)) if event_type[x]=='CDI'), None)
                 prog_idx = next((x for x in range(len(event_type)) if event_type[x] in ('undef_CDW', 'RAW', 'PIRA')), None)
                 raw_idx = next((x for x in range(len(event_type)) if event_type[x]=='RAW'), None)
                 pira_idx = next((x for x in range(len(event_type)) if event_type[x]=='PIRA'), None)
                 undef_prog_idx = next((x for x in range(len(event_type)) if event_type[x]=='undef_CDW'), None)
-                if event=='firsteach':
-                    first_events = [impr_idx, prog_idx]
-                elif event=='firstCDW':
+                if event=='firstCDW':
                     first_events = [prog_idx]
-                elif event=='firstCDWtype':
-                    first_events = [raw_idx, pira_idx]  # , undef_prog_idx
+                elif event=='firstCDI':
+                    first_events = [impr_idx]
                 elif event=='firstPIRA':
                     first_events = [pira_idx]
                 elif event=='firstRAW':
@@ -1247,39 +1257,37 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         else:
             results.drop(subj_index, inplace=True)
 
-        improvement = (results.loc[results[subj_col]==subjid, 'event_type']=='impr').sum()
+        CDI = (results.loc[results[subj_col]==subjid, 'event_type']=='CDI').sum()
         CDW = results.loc[results[subj_col]==subjid, 'event_type'].isin(('undef_CDW', 'RAW', 'PIRA')).sum()
         undef_CDW = (results.loc[results[subj_col]==subjid, 'event_type']=='undef_CDW').sum()
         RAW = (results.loc[results[subj_col]==subjid, 'event_type']=='RAW').sum()
         PIRA = (results.loc[results[subj_col]==subjid, 'event_type']=='PIRA').sum()
-        summary.loc[subjid, ['event_sequence', 'improvement', 'CDW',
-                'RAW', 'PIRA', 'undef_CDW']] = [', '.join(event_type), improvement, CDW,
+        summary.loc[subjid, ['event_sequence', 'CDI', 'CDW',
+                'RAW', 'PIRA', 'undef_CDW']] = [', '.join(event_type), CDI, CDW,
                                                      RAW, PIRA, undef_CDW]
-        if event.startswith('firstCDW'):
-            summary.drop(columns=['improvement'], inplace=True)
+        # if event.startswith('firstCDW'):
+        #     summary.drop(columns=['CDI'], inplace=True)
 
         if verbose == 2:
             print('Event sequence: %s' %(', '.join(event_type) if len(event_type)>0 else '-'))
 
     if verbose >= 1:
-        print(f'''\n---\nOutcome: {outcome.upper()}\nConfirmation {"over" if check_intermediate else "at"}: \
-{conf_days} days (-{conf_tol_days[0]} days, +{"inf" if conf_tol_days[1]==np.inf else str(conf_tol_days[1])+" days"})
-Baseline: {baseline}{" (including sub-threshold %s)" %sub_threshold_rebl if baseline!='fixed' and sub_threshold_rebl!="none" else ""}\
-{" (and post-relapse re-baseline)" if relapse_rebl else ""}
-Relapse influence (baseline): {relapse_to_bl} days\nRelapse influence (event): {relapse_to_event} days
-Relapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {event}
-        ''')
-        print('---\nTotal subjects: %d\n---\nSubjects with disability worsening: %d (PIRA: %d; RAW: %d)'
+        print(f'\n---\nOutcome: {outcome.upper()}\nConfirmation {"over" if check_intermediate else "at"}: '
+        + '; '.join([f'{c} (-{conf_tol_days[c][0]}, +{"inf" if conf_tol_days[c][1]==np.inf else str(conf_tol_days[c][1])}) days' for c in conf_days])
+        + f'\nBaseline: {baseline}' + (f' (including sub-threshold {sub_threshold_rebl})' if baseline!='fixed' and sub_threshold_rebl!="none" else '')
+        + (' (and post-relapse re-baseline)' if relapse_rebl else '')
+        + f'\nRelapse influence (baseline): {relapse_to_bl} days\nRelapse influence (event): {relapse_to_event} days'
+        + f'\nRelapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {event}')
+        print('---\nTotal subjects: %d\n---\nSubjects with CDW: %d (PIRA: %d; RAW: %d)'
               %(nsub, (summary['CDW']>0).sum(),
                 (summary['PIRA']>0).sum(), (summary['RAW']>0).sum()))
-        if event not in ('firstCDW', 'firstCDWtype', 'firstPIRA', 'firstRAW'):
-            print('Subjects with disability improvement: %d' %(summary['improvement']>0).sum())
-        if event in ('multiple', 'firstCDWtype'):
+        if event not in ('firstCDW', 'firstPIRA', 'firstRAW'):
+            print('Subjects with CDI: %d' %(summary['CDI']>0).sum())
+        if event == 'multiple':
             print('---\nCDW events: %d (PIRA: %d; RAW: %d)'
                   %(summary['CDW'].sum(),
                     summary['PIRA'].sum(), summary['RAW'].sum()))
-        if event=='multiple':
-            print('Improvement events: %d' %(summary['improvement'].sum()))
+            print('CDI events: %d' %(summary['CDI'].sum()))
 
     columns = results.columns
     if not include_dates:
@@ -1293,8 +1301,11 @@ Relapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {even
     elif event == 'firstRAW':
         scolumns = ['RAW']
         columns = [c for c in columns if not c.startswith('PIRA')]
-    elif event in ('firstCDW', 'firstCDWtype'):
-        scolumns = [c for c in scolumns if c != 'improvement']
+    elif event == 'firstCDW':
+        scolumns = [c for c in scolumns if c != 'CDI']
+    elif event == 'firstCDI':
+        scolumns = ['CDI']
+        columns = [c for c in columns if not c.startswith('PIRA')]
 
     summary = summary[scolumns]
     results = results[columns]
@@ -1317,7 +1328,11 @@ Relapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {even
 
 def compute_delta(baseline, outcome='edss'):
     '''
-    Definition of progression deltas for different tests.
+    Definition of default minimum clinically meaningful shift for different scales
+    (EDSS, NHPT, T25FW, or SDMT).
+
+    Note: default thresholds are meant to apply to all versions of each test
+    (e.g., dominant or non-dominant hand for NHPT, best time or median of two trials, etc.).
 
     Parameters
     ----------
@@ -1329,28 +1344,31 @@ def compute_delta(baseline, outcome='edss'):
     Returns
     -------
     float
-        Minimum delta corresponding to valid change in the outcome measure.
+        Minimum clinically meaningful change from the provided baseline value. Specifically:
+        - EDSS: 1.5 if `baseline`=0, 1 if 0<`baseline`<=5.0, 0.5 if `baseline`>5.0
+        - NHPT and T25FW: 20`%` of `baseline`
+        - SDMT: either 3 points or 10`%` of `baseline`.
 
     '''
     if outcome == 'edss':
-        if baseline>=0 and baseline<.5:
+        if baseline == 0:
             return 1.5
-        elif baseline>=.5 and baseline<5.5:
+        elif baseline > 0 and baseline <= 5:
             return 1.0
-        elif baseline>=5.5 and baseline<=10:
+        elif baseline > 5 and baseline <= 10:
             return 0.5
         else:
             raise ValueError('invalid EDSS score')
     elif outcome in ('nhpt', 't25fw'):
-        if baseline<0:
-            raise ValueError('invalid %s score' %outcome.upper())
-        if outcome=='nhpt' and baseline>300:
+        if baseline < 0:
+            raise ValueError('negative %s score' %outcome.upper())
+        if outcome == 'nhpt' and baseline > 300:
             warnings.warn('NHPT score >300')
-        if outcome=='t25fw' and baseline>180:
+        if outcome == 't25fw' and baseline > 180:
             warnings.warn('T25FW score >180')
         return baseline/5
     elif outcome == 'sdmt':
-        if baseline<0 or baseline>110:
+        if baseline < 0 or baseline > 110:
             raise ValueError('invalid SDMT score')
         return min(baseline/10, 3)
     else:
@@ -1374,11 +1392,26 @@ def is_event(x, baseline, type, outcome=None, worsening=None,
      type: str
         'wors' or 'impr' or 'change'.
      outcome: str
-        Type of test (one of: 'edss','nhpt','t25fw','sdmt').
-     worsening: 'increase' or 'decrease'. If outcome is specified, it is automatically assigned
-                ('increase' for edss, nhpt, t25fw; 'decrease' for sdmt)
+        Outcome type (one of: 'edss','nhpt','t25fw','sdmt', None).
+        Outcome type (if not None) determines a default direction of worsening (see ``worsening`` argument)
+        and default definition of clinically meaningful change given the reference value
+        (using the built-in function :func:`compute_delta()`).
+     worsening: str
+        'increase' or 'decrease'. If outcome is specified, the argument is ignored
+        and the direction of worsening is automatically assigned
+        ('increase' for edss, nhpt, t25fw; 'decrease' for sdmt)
+     sub_threshold: bool
+        Whether to retain events below the clinically meaningful change from baseline.
+     delta_fun: function
+        Custom function specifying the minimum clinically meaningful change
+        in the outcome measure from the provided reference value.
+        The function provided must take a numeric value (reference score) as input,
+        and return a numeric value corresponding to the minimum shift from baseline.
+        If none is specified (default), the user must provide a non-None value for
+        the ``outcome`` argument (see above) in order to use the built-in function :func:`compute_delta()`.
+        The argument is ignored if ``sub_threshold=True``.
      baseline_delta: float
-        Baseline value to use to compute delta, if different from baseline.
+        Baseline value to use to compute clinically meaningful change, if different from baseline.
 
     Returns
     -------
@@ -1390,16 +1423,16 @@ def is_event(x, baseline, type, outcome=None, worsening=None,
 
     if outcome in ('edss', 'nhpt', 't25fw'):
         worsening = 'increase'
-    elif outcome=='sdmt':
+    elif outcome == 'sdmt':
         worsening = 'decrease'
     elif worsening is None:
         raise ValueError('Either specify a valid outcome type, or specify worsening direction')
-    improvement = 'increase' if worsening=='decrease' else 'decrease'
+    improvement = 'increase' if worsening == 'decrease' else 'decrease'
 
     if sub_threshold:
         event_sign = {'increase': x > baseline, 'decrease': x < baseline, 'change': x != baseline}
     else:
-        if delta_fun is None and outcome is None:
+        if delta_fun is None and outcome is None and not sub_threshold:
             raise ValueError('Either specify a valid outcome type, or specify a custom `delta_fun`')
         elif delta_fun is None:
             fun_tmp = compute_delta
@@ -1458,6 +1491,8 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
         - 't25fw' (Timed 25-Foot Walk)
         - 'sdmt' (Symbol Digit Modalities Test)
         - None (only accepted when specifying a custom ``worsening``).
+
+        Outcome type determines a default direction of worsening (see ``worsening`` argument).
 
     relapse: pandas.DataFrame
         Longitudinal data containing subject ID and relapse date (can be omitted).
@@ -1534,7 +1569,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
     -----
     An event is only retained if **confirmed**, i.e., if all values *up to* the
     confirmation visit reach or exceed the milestone.
-    Valid time windows for confirmation visits are determined by arguments
+    Time windows for confirmation visits are determined by arguments
     ``conf_days``, ``conf_tol_days``, ``relapse_to_conf``.
 
     Raises
@@ -1791,7 +1826,11 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
         - 'nhpt' (Nine-Hole Peg Test)
         - 't25fw' (Timed 25-Foot Walk)
         - 'sdmt' (Symbol Digit Modalities Test)
-        - None (only accepted when specifying a custom ``delta_fun``)
+        - None (only accepted when specifying custom ``delta_fun`` and ``worsening``)
+
+        Outcome type determines a default direction of worsening (see ``worsening`` argument)
+        and default definition of clinically meaningful change given the reference value
+        (using the built-in function :func:`compute_delta()`).
 
     relapse: pandas.DataFrame
         Longitudinal data containing subject ID and relapse date.
@@ -1803,12 +1842,12 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
         Name of onset date column for relapse data, if different from outcome data.
 
     delta_fun: function
-        Custom function specifying the minimum shift in the outcome measure that counts as a valid change
-        from the current reference value.
-        The function provided must take a numeric value (reference score) as input, and return a numeric
-        value corresponding to the minimum shift from baseline.
-        If none is specified (default), the user must provide a non-None value for the ``outcome`` argument
-        in order to use the built-in function :func:`compute_delta()`.
+        Custom function specifying the minimum clinically meaningful change
+        in the outcome measure from the provided reference value.
+        The function provided must take a numeric value (reference score) as input,
+        and return a numeric value corresponding to the minimum shift from baseline.
+        If none is specified (default), the user must provide a non-None value for
+        the ``outcome`` argument (see above) in order to use the built-in function :func:`compute_delta()`.
 
     worsening: str
         The direction of worsening ('increase' if higher values correspond to worse disease course, 'decrease' otherwise).
@@ -2111,8 +2150,8 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             # data_id.loc[:rel_free_bl-1, bump_col] = data_id.loc[:rel_free_bl-1, bump_col] + bump.loc[:rel_free_bl-1]
             if verbose == 2:
                 print('Moving global baseline to first visit out of relapse influence (visit #%d, %s)'
-                      %(rel_free_bl + 1, (global_start.date() + datetime.timedelta(
-                                days=data_id.loc[0, date_col].item())).date()))
+                      %(rel_free_bl + 1, global_start.date() + datetime.timedelta(
+                                days=data_id.loc[0, date_col].item())))
         else:
             global_bl = data_id.loc[0, :].copy()
         nvisits = len(data_id)
@@ -2146,14 +2185,14 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             if last_conf is not None and last_conf >= relapse_id.loc[irel, rdate_col]:
                 if verbose == 2:
                     print('Relapse #%d/%d (%s): skipped (falls within confirmation period of last %s change)'
-                          %(irel+1, len(relapse_id), (global_start.date() + datetime.timedelta(
-                                days=relapse_id.loc[irel, rdate_col].item())).date(), outcome))
+                          %(irel+1, len(relapse_id), global_start.date() + datetime.timedelta(
+                                days=relapse_id.loc[irel, rdate_col].item()), outcome))
                 continue  # go to next relapse
 
             if verbose == 2:
                 print('Relapse #%d/%d (%s)' %(irel+1, len(relapse_id),
-                        (global_start.date() + datetime.timedelta(
-                            days=relapse_id.loc[irel, rdate_col].item())).date()
+                        global_start.date() + datetime.timedelta(
+                            days=relapse_id.loc[irel, rdate_col].item())
                                                 ))
 
             # Baseline set to last visit before the relapse and out of its influence (as per `relapse_to_bl`and `relapse_assoc`):
@@ -2171,7 +2210,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             if verbose == 2:
                 print('Baseline reset to last visit before the relapse and out of its influence%s (%s, %s=%.1f)'
                       %(': visit #' + str(bl_idx + 1) if bl_idx is not None else '',
-                        (global_start.date() + datetime.timedelta(days=bl[date_col].item())).date(),
+                        global_start.date() + datetime.timedelta(days=bl[date_col].item()),
                         outcome, bl[value_col]))
 
             # Identify the first possible event
@@ -2204,8 +2243,8 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
                 if verbose == 2 and not stable:
                     print('%s change found: visit #%d (%s, %s=%.1f)' %(outcome, change_idx + 1,
-                                (global_start.date() + datetime.timedelta(
-                                    days=data_id.loc[change_idx, date_col].item())).date(),
+                                global_start.date() + datetime.timedelta(
+                                    days=data_id.loc[change_idx, date_col].item()),
                                 outcome, data_id.loc[change_idx, value_col]))
 
                 if (change_idx is None  # no change
@@ -2275,8 +2314,8 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
                         if verbose == 2:
                             print('Confirmed%s RAW on visit #%d (%s); delta = %.1f, max bump delta = %.1f'
                                   %(' sustained' if sust_raw_days > 0 else '', change_idx + 1,
-                                    (global_start.date() + datetime.timedelta(
-                                    days=data_id.loc[change_idx, date_col].item())).date(),
+                                    global_start.date() + datetime.timedelta(
+                                    days=data_id.loc[change_idx, date_col].item()),
                                   value_change, bump.max()))
                     else:
                         end_idx = next_nonsust - 1
@@ -2286,8 +2325,8 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
                         data_id.loc[change_idx:end_idx, bump_col] = data_id.loc[change_idx:end_idx, bump_col] + bump
                         if verbose == 2:
                             print('Change (visit #%d, %s) confirmed but not sustained for >=%s days\n-- only subtracting the \"bump\" (max delta = %.1f)'
-                                  %(change_idx + 1, (global_start.date() + datetime.timedelta(
-                                    days=data_id.loc[change_idx, date_col].item())).date(),
+                                  %(change_idx + 1, global_start.date() + datetime.timedelta(
+                                    days=data_id.loc[change_idx, date_col].item()),
                                     sust_raw_days, bump.max()))
 
                 # NO confirmation:
