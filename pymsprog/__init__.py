@@ -1,19 +1,15 @@
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
+import copy
+import datetime
 import os
+import warnings
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-import datetime
-
-import copy
-from pathlib import Path
-
-import warnings
-
-from importlib import resources
 
 #####################################################################################
 def load_toy_data():
@@ -69,7 +65,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
            require_sust_days=0, check_intermediate=True,
            relapse_to_bl=30, relapse_to_event=0, relapse_to_conf=30,
            relapse_assoc=90, relapse_indep=None,
-           impute_last_visit=0,
+           impute_last_visit=0, date_format=None,
            include_dates=False, include_value=False, include_stable=True,
            return_unconfirmed=False, verbose=1):
     '''
@@ -317,6 +313,15 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         If a value ``N>1`` is passed, unconfirmed worsening events are imputed only if occurring within
         ``N`` days of follow-up (e.g., in case of early discontinuation).
 
+    date_format: str
+        Format of dates in the input data. Can be:
+
+        - 'day' if dates are given as "days from start" (the starting point can be different for each subject
+          -- e.g., days from randomisation in a clinical trial); negative values are accepted.
+        - Standard format for dates (e.g., ``"\%d-\%m-\%Y"``; see :func:`strftime()` docs for correct syntax).
+
+        If not specified, function :func:`pandas.to_datetime()` will try to infer it automatically.
+
     include_dates: bool
         If True, the ``results`` DataFrame will include the date of each event ('date' column)
         and the date of the corresponding baseline ('bldate' column).
@@ -511,7 +516,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     data = data[np.unique([subj_col, value_col, date_col, validconf_col, valuedelta_col])].copy().dropna()  #_c_#
 
     # Convert dates to datetime.date format
-    data[date_col] = pd.to_datetime(data[date_col])
+    if date_format != 'day':
+        try:
+            data[date_col] = pd.to_datetime(data[date_col], format=date_format)
+        except:
+            raise ValueError(f'Failed to intepret \'{date_col}\' column as dates; please provide correct format via `date_format` argument.')
     if relapse is None:
         relapsedata = False
         relapse_rebl = False
@@ -520,16 +529,35 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     else:
         relapsedata = True
         relapse = relapse[[rsubj_col, rdate_col]].copy().dropna()
-        relapse[rdate_col] = pd.to_datetime(relapse[rdate_col])
+        if date_format != 'day':
+            try:
+                relapse[rdate_col] = pd.to_datetime(relapse[rdate_col], format=date_format)
+            except:
+                raise ValueError(f'Failed to intepret \'{rdate_col}\' column as dates; please provide correct format via `date_format` argument.')
         relapse_start = relapse[rdate_col].min()
 
     # Convert dates to days from minimum #_d_#
-    global_start = min(data[date_col].min(), relapse_start)
-    if relapsedata:
-        relapse[rdate_col] = (relapse[rdate_col] - global_start).apply(lambda x : x.days)
+    if date_format != 'day':
+        global_start = min(data[date_col].min(), relapse_start)
+        if relapsedata:
+            relapse[rdate_col] = (relapse[rdate_col] - global_start).apply(lambda x : x.days)
+        else:
+            relapse[rdate_col] = relapse[rdate_col].astype(float)
+        data[date_col] = (data[date_col] - global_start).apply(lambda x : x.days)
     else:
-        relapse[rdate_col] = relapse[rdate_col].astype(int)
-    data[date_col] = (data[date_col] - global_start).apply(lambda x : x.days)
+        try:
+            data[date_col] = data[date_col].astype(float)
+            relapse[rdate_col] = relapse[rdate_col].astype(float)
+        except:
+            raise ValueError('Failed to intepret date columns as number of days (as per `date_format=\'day\'`)')
+        global_start = None
+
+    # Local function to display dates/days
+    def display_date(day, start, to_print=False):
+        if date_format == 'day':
+            return f'day {day:.0f}' if to_print else day
+        else:
+            return start.date() + datetime.timedelta(days=day.item())
 
     # Restrict to subset of subjects
     if subjects is not None:
@@ -556,9 +584,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
     max_nevents = round(data.groupby(subj_col)[date_col].count().max()/2)
-    results = pd.DataFrame([['', pd.NaT, np.nan, pd.NaT, np.nan,
-                             0, np.nan, np.nan]
-                            + [0]*len(conf_days)*2 + [0]*2]*nsub*max_nevents,
+    results = pd.DataFrame([['', np.nan if date_format == 'day' else pd.NaT, np.nan,
+                             np.nan if date_format == 'day' else pd.NaT, np.nan,
+                             0., np.nan, np.nan]
+                            + [0.]*len(conf_days)*2 + [0.]*2]*nsub*max_nevents,
                columns=['event_type', 'bldate', 'blvalue', 'date', 'value',
                         'total_fu', 'time2event', 'bl2event']
                        + ['conf'+str(m) for m in conf_days]+ ['PIRA_conf'+str(m) for m in conf_days]
@@ -576,7 +605,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
     for subjid in all_subj:
 
-        data_id = data.loc[data[subj_col]==subjid,:].copy()
+        data_id = data.loc[data[subj_col]==subjid, :].copy()
 
         # If more than one visit occur on the same day, only keep last
         udates, ucounts = np.unique(data_id[date_col].values, return_counts=True)
@@ -747,7 +776,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 if verbose == 2:
                     print('%s change at visit no.%d (%s); potential confirmation visits available: no.%s'
                           %(outcome.upper(), change_idx + 1 ,
-                            global_start.date() + datetime.timedelta(days=data_id.loc[change_idx, date_col].item()), #_d_#
+                            display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
                             ', '.join(['%d' %(i + 1) for i in conf_idx])))
 
                 # Confirmation
@@ -794,9 +823,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
                         event_type.append('CDI')
                         event_index.append(change_idx)
-                        bldate.append(global_start + datetime.timedelta(days=bl[date_col].item())) #_d_#
+                        bldate.append(display_date(bl[date_col], global_start)) #_d_#
                         blvalue.append(bl[value_col])
-                        edate.append(global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item())) #_d_#
+                        edate.append(display_date(data_id.loc[change_idx,date_col], global_start)) #_d_#
                         evalue.append(data_id.loc[change_idx,value_col])
                         time2event.append(data_id.loc[change_idx,date_col] - data_id.loc[0,date_col]) #.days #_d_#
                         bl2event.append(data_id.loc[change_idx,date_col] - bl[date_col]) #.days #_d_#
@@ -814,10 +843,10 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                         if verbose == 2:
                             print('%s improvement (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
                                   %(outcome.upper(), change_idx+1,
-                                    global_start.date() + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
+                                    display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
                                     ', '.join([str(x) for x in conf_t.keys()]),  #_conf_#
                                     sust_idx+1,
-                                    global_start.date() + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
+                                    display_date(data_id.loc[sust_idx,date_col], global_start, to_print=True))) #_d_#
 
                     else:
                         # If the event is NOT retained (as per `require_sust_days`), we proceed.
@@ -827,9 +856,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                     'proceed with search')
                         if return_unconfirmed:
                             unconf.append([subjid,
-                                           global_start + datetime.timedelta(days=data_id.loc[change_idx, date_col].item()),
+                                           display_date(data_id.loc[change_idx, date_col], global_start),
                                            data_id.loc[change_idx, value_col],
-                                           global_start + datetime.timedelta(days=bl[date_col].item()),
+                                           display_date(bl[date_col], global_start),
                                            bl[value_col],
                                            data_id.loc[change_idx, 'closest_rel-'],
                                            data_id.loc[change_idx, 'closest_rel+']])
@@ -1033,12 +1062,12 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                 for m in conf_days:
                                     pira_conf[m].append(0)
 
-                            bldate.append(global_start + datetime.timedelta(days=bl[date_col].item())) #_d_#
+                            bldate.append(display_date(bl[date_col], global_start)) #_d_#
                             blvalue.append(bl[value_col])
-                            edate.append(global_start + datetime.timedelta(days=data_id.loc[change_idx,date_col].item())) #_d_#
-                            evalue.append(data_id.loc[change_idx,value_col])
-                            time2event.append(data_id.loc[change_idx,date_col] - data_id.loc[0,date_col]) #.days #_d_#
-                            bl2event.append(data_id.loc[change_idx,date_col] - bl[date_col]) #.days #_d_#
+                            edate.append(display_date(data_id.loc[change_idx, date_col], global_start)) #_d_#
+                            evalue.append(data_id.loc[change_idx, value_col])
+                            time2event.append(data_id.loc[change_idx, date_col] - data_id.loc[0,date_col]) #.days #_d_#
+                            bl2event.append(data_id.loc[change_idx, date_col] - bl[date_col]) #.days #_d_#
                             for m in conf_days:
                                 confirmed_at = np.intersect1d(conf_t[m], conf_idx)
                                 if len(confirmed_at)==0:
@@ -1051,11 +1080,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                             if verbose == 2:
                                 print('%s %s (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
                                       %(outcome.upper(), event_type[-1], change_idx+1,
-                                        global_start.date() + datetime.timedelta(days=data_id.loc[change_idx,date_col].item()), #_d_#
+                                        display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
                                         ', '.join([str(x) for x in (pconf_t.keys() if event_type[-1]=='PIRA'
                                                                     else conf_t.keys())]), #_conf_#
                                         sust_idx+1,
-                                        global_start.date() + datetime.timedelta(days=data_id.loc[sust_idx,date_col].item()))) #_d_#
+                                        display_date(data_id.loc[sust_idx, date_col], global_start, to_print=True))) #_d_#
                             # )**
 
                     else:
@@ -1070,9 +1099,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                   %require_sust_days)
                         if return_unconfirmed:
                             unconf.append([subjid,
-                                           global_start + datetime.timedelta(days=data_id.loc[change_idx, date_col].item()),
+                                           display_date(data_id.loc[change_idx, date_col], global_start),
                                            data_id.loc[change_idx, value_col],
-                                           global_start + datetime.timedelta(days=bl[date_col].item()),
+                                           display_date(bl[date_col], global_start),
                                            bl[value_col],
                                            data_id.loc[change_idx, 'closest_rel-'],
                                            data_id.loc[change_idx, 'closest_rel+']])
@@ -1132,9 +1161,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                         print('Change not confirmed: proceed with search')
                     if return_unconfirmed and change_idx is not None:
                         unconf.append([subjid,
-                                       global_start + datetime.timedelta(days=data_id.loc[change_idx, date_col].item()),
+                                       display_date(data_id.loc[change_idx, date_col], global_start),
                                        data_id.loc[change_idx, value_col],
-                                       global_start + datetime.timedelta(days=bl[date_col].item()),
+                                       display_date(bl[date_col], global_start),
                                        bl[value_col],
                                        data_id.loc[change_idx, 'closest_rel-'],
                                        data_id.loc[change_idx, 'closest_rel+']])
@@ -1180,7 +1209,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
         subj_index = results[results[subj_col]==subjid].index
 
-        if len(event_type)>1:
+        if len(event_type) > 1:
 
             event_type = event_type[1:] # remove first empty event
 
@@ -1219,40 +1248,40 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 event_type = [event_type[ii] for ii in first_events]
                 event_order = [event_order[ii] for ii in first_events]
 
-            if include_stable and len(event_type)==0:
-                results.drop(subj_index[1:], inplace=True)
-                results.loc[results[subj_col]==subjid, 'nevent'] = 0
-                results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
-                results.loc[results[subj_col]==subjid, 'time2event'] = total_fu[subjid]
-                results.loc[results[subj_col]==subjid, 'date'] = global_start + datetime.timedelta(
-                                                days=data_id.loc[nvisits - 1, date_col].item())
-                results.loc[results[subj_col]==subjid, 'event_type'] = ''
-            elif len(event_type)==0:
-                results.drop(subj_index, inplace=True)
-            else:
-                results.drop(subj_index[len(event_type):], inplace=True)
-                results.loc[results[subj_col]==subjid, 'event_type'] = event_type
-                results.loc[results[subj_col]==subjid, 'bldate'] = [bldate[i] for i in event_order]
-                results.loc[results[subj_col]==subjid, 'blvalue'] = [blvalue[i] for i in event_order]
-                results.loc[results[subj_col]==subjid, 'date'] = [edate[i] for i in event_order]
-                results.loc[results[subj_col]==subjid, 'value'] = [evalue[i] for i in event_order]
-                results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
-                results.loc[results[subj_col]==subjid, 'time2event'] = [time2event[i] for i in event_order]
-                results.loc[results[subj_col]==subjid, 'bl2event'] = [bl2event[i] for i in event_order]
-                for m in conf_days:
-                    results.loc[results[subj_col]==subjid, 'conf'+str(m)] = [conf[m][i] for i in event_order]
-                results.loc[results[subj_col]==subjid, 'sust_days'] = [sustd[i] for i in event_order]
-                results.loc[results[subj_col]==subjid, 'sust_last'] = [sustl[i] for i in event_order]
-                for m in conf_days: #[1:]: #_piraconf_#
-                    results.loc[results[subj_col]==subjid, 'PIRA_conf'+str(m)] = [pira_conf[m][i] for i in event_order]
+            # if include_stable and len(event_type)==0:
+            #     results.drop(subj_index[1:], inplace=True)
+            #     results.loc[results[subj_col]==subjid, 'nevent'] = 0
+            #     results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
+            #     results.loc[results[subj_col]==subjid, 'time2event'] = total_fu[subjid]
+            #     # results.loc[results[subj_col]==subjid, 'date'] = display_date(data_id.loc[nvisits - 1, date_col],
+            #     #                                                               global_start)
+            #     results.loc[results[subj_col]==subjid, 'event_type'] = ''
+            # elif len(event_type)==0:
+            #     results.drop(subj_index, inplace=True)
+            # else:
+            results.drop(subj_index[len(event_type):], inplace=True)
+            results.loc[results[subj_col]==subjid, 'event_type'] = event_type
+            results.loc[results[subj_col]==subjid, 'bldate'] = [bldate[i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'blvalue'] = [blvalue[i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'date'] = [edate[i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'value'] = [evalue[i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
+            results.loc[results[subj_col]==subjid, 'time2event'] = [time2event[i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'bl2event'] = [bl2event[i] for i in event_order]
+            for m in conf_days:
+                results.loc[results[subj_col]==subjid, 'conf'+str(m)] = [conf[m][i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'sust_days'] = [sustd[i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'sust_last'] = [sustl[i] for i in event_order]
+            for m in conf_days: #[1:]: #_piraconf_#
+                results.loc[results[subj_col]==subjid, 'PIRA_conf'+str(m)] = [pira_conf[m][i] for i in event_order]
 
         elif include_stable:
             results.drop(subj_index[1:], inplace=True)
             results.loc[results[subj_col]==subjid, 'nevent'] = 0
             results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
             results.loc[results[subj_col]==subjid, 'time2event'] = total_fu[subjid]
-            results.loc[results[subj_col]==subjid, 'date'] = global_start + datetime.timedelta(
-                                            days=data_id.loc[nvisits - 1, date_col].item())
+            # results.loc[results[subj_col]==subjid, 'date'] = display_date(data_id.loc[nvisits - 1, date_col],
+            #                                                               global_start)
 
         else:
             results.drop(subj_index, inplace=True)
@@ -1455,7 +1484,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                     relapse=None, rsubj_col=None, rdate_col=None, worsening=None,
                     validconf_col=None, conf_days=7*12, conf_tol_days=[7, 2*365.25],
                     require_sust_days=0, relapse_to_event=0, relapse_to_conf=30,
-                    impute_last_visit=0,
+                    impute_last_visit=0, date_format=None,
                     verbose=0):
     '''
 
@@ -1551,6 +1580,15 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
         if ``impute_last_visit=1``, it is always imputed; if ``impute_last_visit=p``, ``0<p<1``, it is imputed with probability ``p``.
         If a value ``N>1`` is passed, milestone is imputed only if occurring within
         ``N`` days of follow-up (e.g., in case of early discontinuation).
+
+    date_format: str
+        Format of dates in the input data. Can be:
+
+        - 'day' if dates are given as "days from start" (the starting point can be different for each subject
+          -- e.g., days from randomisation in a clinical trial); negative values are accepted.
+        - Standard format for dates (e.g., ``"\%d-\%m-\%Y"``; see :func:`strftime()` docs for correct syntax).
+
+        If not specified, function :func:`pandas.to_datetime()` will try to infer it automatically.
 
     verbose: int
         One of: 0 (print no info); 1 (print concise info); 1 (print extended info).
@@ -1652,24 +1690,52 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
     data = data[[subj_col, value_col, date_col, validconf_col]].dropna()
 
     # Convert dates to datetime.date format
-    data[date_col] = pd.to_datetime(data[date_col])
+    if date_format != 'day':
+        try:
+            data[date_col] = pd.to_datetime(data[date_col], format=date_format)
+        except:
+            raise ValueError(f'Failed to intepret \'{date_col}\' column as dates; please provide correct format via `date_format` argument.')
     if relapse is None:
+        relapsedata = False
         relapse = pd.DataFrame([], columns=[rsubj_col, rdate_col])
         relapse_start = data[date_col].min()
     else:
+        relapsedata = True
         relapse = relapse[[rsubj_col, rdate_col]].copy().dropna() # remove missing values from columns of interest
-        relapse[rdate_col] = pd.to_datetime(relapse[rdate_col])
+        if date_format != 'day':
+            try:
+                relapse[rdate_col] = pd.to_datetime(relapse[rdate_col], format=date_format)
+            except:
+                raise ValueError(f'Failed to intepret \'{rdate_col}\' column as dates; please provide correct format via `date_format` argument.')
         relapse_start = relapse[rdate_col].min()
     # Convert dates to days from minimum #_d_#
-    global_start = min(data[date_col].min(), relapse_start)
-    relapse[rdate_col] = (relapse[rdate_col] - global_start).apply(lambda x : x.days)
-    data[date_col] = (data[date_col] - global_start).apply(lambda x : x.days)
+    if date_format != 'day':
+        global_start = min(data[date_col].min(), relapse_start)
+        if relapsedata:
+            relapse[rdate_col] = (relapse[rdate_col] - global_start).apply(lambda x : x.days)
+        else:
+            relapse[rdate_col] = relapse[rdate_col].astype(float)
+        data[date_col] = (data[date_col] - global_start).apply(lambda x : x.days)
+    else:
+        try:
+            data[date_col] = data[date_col].astype(float)
+            relapse[rdate_col] = relapse[rdate_col].astype(float)
+        except:
+            raise ValueError('Failed to intepret date columns as number of days (as per `date_format=\'day\'`)')
+        global_start = None
+
+    # Local function to display dates/days
+    def display_date(day, start, to_print=False):
+        if date_format == 'day':
+            return f'day {day:.0f}' if to_print else day
+        else:
+            return start.date() + datetime.timedelta(days=day.item())
 
     conf_window = [(int(c) - conf_tol_days[0], int(c) + conf_tol_days[1]) for c in conf_days]
 
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
-    results = pd.DataFrame([[pd.NaT, np.nan, np.nan, 0]]*nsub,
+    results = pd.DataFrame([[np.nan if date_format == 'day' else pd.NaT, np.nan, np.nan, 0]]*nsub,
                            columns=[date_col, value_col, 'time2event', 'observed'], index=all_subj)
 
     for subjid in all_subj:
@@ -1717,7 +1783,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                     and (data_id.loc[x, 'closest_rel+'] >= relapse_to_event[1])  # out of influence of next relapse
                                   ), None)
             if milestone_idx is None: # value does not change in any subsequent visit
-                results.at[subjid, date_col] = global_start + datetime.timedelta(days=data_id.loc[nvisits - 1, date_col].item()) #_d_# data_id.iloc[-1,:][date_col]
+                results.at[subjid, date_col] = display_date(data_id.loc[nvisits - 1, date_col], global_start) #_d_# data_id.iloc[-1,:][date_col]
                 results.at[subjid, 'time2event'] = data_id.loc[nvisits - 1, date_col] - data_id.loc[0, date_col]
                 proceed = 0
                 if verbose == 2:
@@ -1732,7 +1798,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                 conf_idx = np.unique([x for i in range(len(conf_idx)) for x in conf_idx[i]])
                 if verbose == 2:
                     print(f'Found value {">=" if worsening == "increase" else "<="} {milestone} at visit no. {milestone_idx + 1} '
-                          + f'({global_start.date() + datetime.timedelta(days=data_id.loc[milestone_idx,date_col].item())}); '
+                          + f'({display_date(data_id.loc[milestone_idx,date_col], global_start, to_print=True)}); '
                           + f'potential confirmation visits available: no. {", ".join(["%d" %(i + 1) for i in conf_idx])}')
 
                 if (len(conf_idx) > 0  # confirmation visits available
@@ -1755,7 +1821,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                                     - data_id.loc[milestone_idx, date_col]) >= require_sust_days
 
                     if valid:
-                        results.at[subjid, date_col] = global_start + datetime.timedelta(days=data_id.loc[milestone_idx, date_col].item()) #_d_# #data_id.loc[milestone_idx,date_col]
+                        results.at[subjid, date_col] = display_date(data_id.loc[milestone_idx, date_col], global_start) #_d_# #data_id.loc[milestone_idx,date_col]
                         results.at[subjid, value_col] = data_id.loc[milestone_idx, value_col]
                         results.at[subjid, 'time2event'] = data_id.loc[milestone_idx, date_col] - data_id.loc[0, date_col]
                         results.at[subjid, 'observed'] = 1
@@ -1763,7 +1829,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                         if verbose == 2:
                             print(f'{"Imputed" if milestone_idx == nvisits - 1 else "Confirmed"} value '
                               + f'{">=" if worsening == "increase" else "<="} {milestone} at visit no. {milestone_idx + 1} '
-                              + f'({global_start.date() + datetime.timedelta(days=data_id.loc[milestone_idx, date_col].item())}): end process')
+                              + f'({display_date(data_id.loc[milestone_idx, date_col], global_start, to_print=True)}): end process')
                     else:
                         search_idx = next_nonsust + 1
                         if verbose == 2:
@@ -1797,7 +1863,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
                    rsubj_col=None, rdate_col=None, delta_fun=None, worsening=None,
                    validconf_col=None, conf_days=7*12, conf_tol_days=[7, 2*365.25], sust_raw_days=180,
                    relapse_to_bl=30, relapse_to_conf=30, relapse_assoc=90, impute_last_visit=0,
-                   subtract_bl=False, include_rel_num=False, include_bl=True,
+                   subtract_bl=False, date_format=None, include_rel_num=False, include_bl=True,
                    include_raw_dates=False, verbose=0):
     '''
 
@@ -1912,6 +1978,15 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
     subtract_bl: bool
         If True, the returned DataFrame will also include (``f'{value_col}-bl'`` column) the overall change
         in score from baseline (simply obtained by subtracting the overall baseline from ``data[value_col]``).
+
+    date_format: str
+        Format of dates in the input data. Can be:
+
+        - 'day' if dates are given as "days from start" (the starting point can be different for each subject
+          -- e.g., days from randomisation in a clinical trial); negative values are accepted.
+        - Standard format for dates (e.g., ``"\%d-\%m-\%Y"``; see :func:`strftime()` docs for correct syntax).
+
+        If not specified, function :func:`pandas.to_datetime()` will try to infer it automatically.
 
     include_rel_num: bool
         If True, the returned DataFrame will include the cumulative number of relapses ('relapse_num' column)
@@ -2063,19 +2138,33 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
     # Remove missing values from columns of interest
     data_sep = data_sep.dropna(subset=[subj_col, value_col, date_col, validconf_col])
-    # Convert dates to datetime.date format
-    data_sep[date_col] = pd.to_datetime(data_sep[date_col])
-    if relapse is None:
-        relapse = pd.DataFrame([], columns=[rsubj_col, rdate_col])
-        relapse_start = data_sep[date_col].min()
+    relapse = relapse[[rsubj_col, rdate_col]].copy().dropna()
+
+    if date_format != 'day':
+        # Convert dates to datetime.date format
+        try:
+            data_sep[date_col] = pd.to_datetime(data_sep[date_col], format=date_format)
+            relapse[rdate_col] = pd.to_datetime(relapse[rdate_col])
+        except:
+            raise ValueError('Failed to intepret date column; please provide correct format via `date_format` argument.')
+        # Convert dates to days from minimum #_d_#
+        global_start = min(data[date_col].min(), relapse[rdate_col].min())
+        relapse[rdate_col] = (relapse[rdate_col] - global_start).apply(lambda x : x.days)
+        data_sep[date_col] = (data_sep[date_col] - global_start).apply(lambda x : x.days)
     else:
-        relapse = relapse[[rsubj_col, rdate_col]].copy().dropna() # remove missing values from columns of interest
-        relapse[rdate_col] = pd.to_datetime(relapse[rdate_col])
-        relapse_start = relapse[rdate_col].min()
-    # Convert dates to days from minimum #_d_#
-    global_start = min(data[date_col].min(), relapse_start)
-    relapse[rdate_col] = (relapse[rdate_col] - global_start).apply(lambda x : x.days)
-    data_sep[date_col] = (data_sep[date_col] - global_start).apply(lambda x : x.days)
+        try:
+            data_sep[date_col] = data_sep[date_col].astype(float)
+            relapse[rdate_col] = relapse[rdate_col].astype(float)
+        except:
+            raise ValueError('Failed to intepret date columns as number of days (as per `date_format=\'day\'`)')
+        global_start = None
+
+    # Local function to display dates/days
+    def display_date(day, start, to_print=False):
+        if date_format == 'day':
+            return f'day {day:.0f}' if to_print else day
+        else:
+            return start.date() + datetime.timedelta(days=day.item())
 
     ri_col, ra_col, bump_col = 'ric_' + value_col, 'rac_' + value_col, 'bumps_' + value_col
     data_sep[ra_col] = 0.
@@ -2106,8 +2195,8 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
 
-    if include_raw_dates:
-        raw_events = []
+    #if include_raw_dates:
+    raw_events = []
 
     for subjid in all_subj:
         data_id = data_sep.loc[data_sep[subj_col]==subjid,:].copy().reset_index(drop=True)
@@ -2150,8 +2239,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             # data_id.loc[:rel_free_bl-1, bump_col] = data_id.loc[:rel_free_bl-1, bump_col] + bump.loc[:rel_free_bl-1]
             if verbose == 2:
                 print('Moving global baseline to first visit out of relapse influence (visit #%d, %s)'
-                      %(rel_free_bl + 1, global_start.date() + datetime.timedelta(
-                                days=data_id.loc[0, date_col].item())))
+                      %(rel_free_bl + 1, display_date(data_id.loc[0, date_col], global_start, to_print=True)))
         else:
             global_bl = data_id.loc[0, :].copy()
         nvisits = len(data_id)
@@ -2185,14 +2273,13 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             if last_conf is not None and last_conf >= relapse_id.loc[irel, rdate_col]:
                 if verbose == 2:
                     print('Relapse #%d/%d (%s): skipped (falls within confirmation period of last %s change)'
-                          %(irel+1, len(relapse_id), global_start.date() + datetime.timedelta(
-                                days=relapse_id.loc[irel, rdate_col].item()), outcome))
+                          %(irel+1, len(relapse_id), display_date(relapse_id.loc[irel, rdate_col], global_start,
+                                                                  to_print=True), outcome))
                 continue  # go to next relapse
 
             if verbose == 2:
                 print('Relapse #%d/%d (%s)' %(irel+1, len(relapse_id),
-                        global_start.date() + datetime.timedelta(
-                            days=relapse_id.loc[irel, rdate_col].item())
+                        display_date(relapse_id.loc[irel, rdate_col], global_start, to_print=True)
                                                 ))
 
             # Baseline set to last visit before the relapse and out of its influence (as per `relapse_to_bl`and `relapse_assoc`):
@@ -2210,7 +2297,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             if verbose == 2:
                 print('Baseline reset to last visit before the relapse and out of its influence%s (%s, %s=%.1f)'
                       %(': visit #' + str(bl_idx + 1) if bl_idx is not None else '',
-                        global_start.date() + datetime.timedelta(days=bl[date_col].item()),
+                        display_date(bl[date_col], global_start, to_print=True),
                         outcome, bl[value_col]))
 
             # Identify the first possible event
@@ -2243,8 +2330,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
                 if verbose == 2 and not stable:
                     print('%s change found: visit #%d (%s, %s=%.1f)' %(outcome, change_idx + 1,
-                                global_start.date() + datetime.timedelta(
-                                    days=data_id.loc[change_idx, date_col].item()),
+                                display_date(data_id.loc[change_idx, date_col], global_start, to_print=True),
                                 outcome, data_id.loc[change_idx, value_col]))
 
                 if (change_idx is None  # no change
@@ -2307,15 +2393,13 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
                         # Store info
                         delta_raw.append(value_change)
                         raw_dates.append(data_id.loc[change_idx, date_col])
-                        if include_raw_dates:
-                            raw_events.append([subjid, global_start + datetime.timedelta(
-                                    days=data_id.loc[change_idx, date_col].item())]) #_d_# data_id.loc[change_idx,date_col]
+                        #if include_raw_dates:
+                        raw_events.append([subjid, display_date(data_id.loc[change_idx, date_col], global_start)]) #_d_# data_id.loc[change_idx,date_col]
 
                         if verbose == 2:
                             print('Confirmed%s RAW on visit #%d (%s); delta = %.1f, max bump delta = %.1f'
                                   %(' sustained' if sust_raw_days > 0 else '', change_idx + 1,
-                                    global_start.date() + datetime.timedelta(
-                                    days=data_id.loc[change_idx, date_col].item()),
+                                    display_date(data_id.loc[change_idx, date_col], global_start, to_print=True),
                                   value_change, bump.max()))
                     else:
                         end_idx = next_nonsust - 1
@@ -2325,8 +2409,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
                         data_id.loc[change_idx:end_idx, bump_col] = data_id.loc[change_idx:end_idx, bump_col] + bump
                         if verbose == 2:
                             print('Change (visit #%d, %s) confirmed but not sustained for >=%s days\n-- only subtracting the \"bump\" (max delta = %.1f)'
-                                  %(change_idx + 1, global_start.date() + datetime.timedelta(
-                                    days=data_id.loc[change_idx, date_col].item()),
+                                  %(change_idx + 1, display_date(data_id.loc[change_idx, date_col], global_start),
                                     sust_raw_days, bump.max()))
 
                 # NO confirmation:
@@ -2382,11 +2465,16 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
         if len(data_id)>0:
             data_sep.loc[data[subj_col]==subjid,:] = data_id.drop(columns=['closest_rel-', 'closest_rel+']).values
 
-    data_sep[date_col] = [global_start + datetime.timedelta(
-                    days=int(data_sep.loc[ii,date_col])) for ii in data_sep.index]
-    data_sep[date_col] = pd.to_datetime(data_sep[date_col])
+    data_sep[date_col] = [display_date(int(data_sep.loc[ii, date_col]), global_start) for ii in data_sep.index]
+    if date_format != 'day':
+        data_sep[date_col] = pd.to_datetime(data_sep[date_col])
 
-    return (data_sep, pd.DataFrame(raw_events, columns=[subj_col, date_col])) if include_raw_dates else data_sep
+    raw_events = pd.DataFrame(raw_events, columns=[subj_col, date_col])
+    if verbose > 0:
+        print('\n---\nTotal subjects: %d\n---\nSubjects with RAW: %d\n---'
+              % (nsub, len(raw_events[subj_col].unique())))
+
+    return (data_sep, raw_events) if include_raw_dates else data_sep
 
 
 #####################################################################################

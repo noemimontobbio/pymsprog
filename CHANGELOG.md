@@ -2,6 +2,15 @@
 
 ---
 
+# 1.0.4 — 2026-02-05
+
+Included date_format argument.
+
+### Changed
+- Functions MSprog(), value_milestone(), separate_ri_ra()
+
+---
+
 # 1.0.3 — 2026-01-19
 
 Changed valid values for event argument.
