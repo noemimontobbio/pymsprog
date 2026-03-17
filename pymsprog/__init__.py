@@ -1,5 +1,5 @@
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 
 import copy
 import datetime
@@ -29,15 +29,16 @@ def load_toy_data():
 
     Notes
     -----
-    The dataset is loaded from an Excel file (``MSprog_toydata.xlsx``) bundled with the package.
-    The ``visits`` sheet includes the following columns.
+    The dataset is loaded from two .csv files (``MSprog_toydata_visits.csv`` and ``MSprog_toydata_relapses.csv``) bundled with the package.
+
+    The ``_visits`` file includes the following columns.
 
     - ``id``: subject identifier.
     - ``date``: visit date.
     - ``EDSS``: EDSS score.
     - ``SDMT``: SDMT score.
 
-    The ``relapses`` sheet includes the following columns.
+    The ``_relapses`` file includes the following columns.
 
     - ``id``: subject identifier.
     - ``date``: relapse onset date.
@@ -100,7 +101,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         - 'nhpt' (Nine-Hole Peg Test)
         - 't25fw' (Timed 25-Foot Walk)
         - 'sdmt' (Symbol Digit Modalities Test)
-        - None (only accepted when specifying custom ``delta_fun`` and ``worsening``).
+        - 'custom' (only accepted when specifying custom ``delta_fun`` and ``worsening``).
 
         Outcome type determines a default direction of worsening (see ``worsening`` argument)
         and default definition of clinically meaningful change given the reference value
@@ -123,12 +124,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         in the outcome measure from the provided reference value.
         The function provided must take a numeric value (reference score) as input,
         and return a numeric value corresponding to the minimum shift from baseline.
-        If none is specified (default), the user must provide a non-None value for
-        the ``outcome`` argument (see above) in order to use the built-in function :func:`compute_delta()`.
+        A custom delta function must be specified if ``outcome`` is set to 'custom'
+        (see above). Otherwise, if none is specified, the built-in function :func:`compute_delta()`
+        is used internally.
 
     worsening: str
         The direction of worsening ('increase' if higher values correspond to worse disease course, 'decrease' otherwise).
-        This argument is only used when ``outcome`` is set to None. Otherwise, ``worsening`` is automatically set to
+        This argument is only used when ``outcome`` is set to 'custom'. Otherwise, ``worsening`` is automatically set to
         'increase' if ``outcome`` is set to 'edss', 'nhpt', 't25fw', and to 'decrease' if ``outcome`` is set to 'sdmt'.
 
     valuedelta_col: str
@@ -324,11 +326,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
     include_dates: bool
         If True, the ``results`` DataFrame will include the date of each event ('date' column)
-        and the date of the corresponding baseline ('bldate' column).
+        and the date of the corresponding baseline ('bl_date' column).
 
     include_value: bool
         If True, the ``results`` DataFrame will include the outcome value at each event ('value' column)
-        and at the corresponding baseline ('blvalue' column).
+        and at the corresponding baseline ('bl_value' column).
 
     include_stable: bool
         If True, subjects with no confirmed events are included in the ``results`` DataFrame,
@@ -437,8 +439,9 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     except TypeError:
         relapse_assoc = [relapse_assoc, 0]
 
-    if outcome is None or outcome.lower() not in ['edss', 'nhpt', 't25fw', 'sdmt']:
-        outcome = 'outcome'
+    if outcome.lower() not in ['edss', 'nhpt', 't25fw', 'sdmt', 'custom']:
+        raise ValueError('Invalid value for `outcome` argument. Valid values: \'edss\', \'nhpt\', '
+                         + '\'t25fw\', \'sdmt\', \'custom\'.')
     else:
         outcome = outcome.lower()
 
@@ -506,11 +509,14 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     elif outcome == 'sdmt':
         worsening = 'decrease'
     elif worsening is None:
-        raise ValueError('Either specify an outcome type, or specify the direction of worsening (\'increase\' or \'decrease\')')
+        raise ValueError('If outcome=\'custom\', you must specify the direction of worsening (\'increase\' or \'decrease\')')
 
     def isevent_loc(x, bl, type='wors', st=False, baseline_delta=None):
         return is_event(x, bl, type=type, outcome=outcome, worsening=worsening,
                         sub_threshold=st, delta_fun=delta_fun, baseline_delta=baseline_delta)
+
+    # Convert outcome value column to float
+    data[value_col] = data[value_col].astype(float)
 
     # Remove missing values from columns of interest
     data = data[np.unique([subj_col, value_col, date_col, validconf_col, valuedelta_col])].copy().dropna()  #_c_#
@@ -554,10 +560,12 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
     # Local function to display dates/days
     def display_date(day, start, to_print=False):
-        if date_format == 'day':
+        if day is None:
+            return '' if to_print else (np.nan if date_format == 'day' else pd.NaT)
+        elif date_format == 'day':
             return f'day {day:.0f}' if to_print else day
         else:
-            return start.date() + datetime.timedelta(days=day.item())
+            return (start.date() if to_print else start) + datetime.timedelta(days=day.item())
 
     # Restrict to subset of subjects
     if subjects is not None:
@@ -565,12 +573,12 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         relapse = relapse[relapse[rsubj_col].isin(subjects)]
 
     # Check if values are in correct range
-    if outcome is not None:
+    if outcome != 'custom':
         for vcol in np.unique([value_col, valuedelta_col]):
             if (data[vcol] < 0).any():
-                raise ValueError('negative %s scores' %outcome.upper())
+                raise ValueError(f'negative {outcome.upper()} scores')
             elif outcome == 'edss' and (data[vcol] > 10).any():
-                raise ValueError('invalid %s scores' %outcome.upper())
+                raise ValueError(f'invalid {outcome.upper()} scores')
             elif outcome == 'sdmt' and (data[vcol] > 110).any():
                 raise ValueError('SDMT scores >110')
             elif outcome == 'nhpt' and (data[vcol] > 300).any():
@@ -584,28 +592,33 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
     max_nevents = round(data.groupby(subj_col)[date_col].count().max()/2)
-    results = pd.DataFrame([['', np.nan if date_format == 'day' else pd.NaT, np.nan,
+    results = pd.DataFrame([['', '', np.nan if date_format == 'day' else pd.NaT, np.nan,
                              np.nan if date_format == 'day' else pd.NaT, np.nan,
                              0., np.nan, np.nan]
-                            + [0.]*len(conf_days)*2 + [0.]*2]*nsub*max_nevents,
-               columns=['event_type', 'bldate', 'blvalue', 'date', 'value',
+                            # + [0.]*len(conf_days)*2
+                            + [np.nan if date_format == 'day' else pd.NaT, np.nan]*len(conf_days)*2
+                            + [0.]*2]*nsub*max_nevents,
+               columns=['event_type', 'CDW_type', 'bl_date', 'bl_value', 'date', 'value',
                         'total_fu', 'time2event', 'bl2event']
-                       + ['conf'+str(m) for m in conf_days]+ ['PIRA_conf'+str(m) for m in conf_days]
+                       # + [f'conf{m}' for m in conf_days] + [f'PIRA_conf{m}' for m in conf_days]
+                       + [f'conf{m}_date' for m in conf_days] + [f'conf{m}_value' for m in conf_days]
+                       + [f'PIRA_conf{m}_date' for m in conf_days] + [f'PIRA_conf{m}_value' for m in conf_days]
                        + ['sust_days', 'sust_last'])
     results.insert(loc=0, column=subj_col, value=np.repeat(all_subj, max_nevents))
     results.insert(loc=1, column='nevent', value=np.tile(np.arange(1, max_nevents + 1), nsub))
     # results[subj_col] = np.repeat(all_subj, max_nevents)
     # results['nevent'] = np.tile(np.arange(1, max_nevents + 1), nsub)
 
-    summary = pd.DataFrame([[''] + [0]*5]*nsub, columns=['event_sequence', 'CDI', 'CDW',
-                                                  'RAW', 'PIRA', 'undef_CDW'], index=all_subj)
+    summary = pd.DataFrame([[''] + [0]*4]*nsub,
+                           columns=['event_sequence', 'CDI', 'CDW', 'RAW', 'PIRA'],
+                           index=all_subj)
     if return_unconfirmed:
         unconf = []
-    total_fu = {s : 0 for s in all_subj}
+    total_fu = {s: 0 for s in all_subj}
 
     for subjid in all_subj:
 
-        data_id = data.loc[data[subj_col]==subjid, :].copy()
+        data_id = data.loc[data[subj_col] == subjid, :].copy()
 
         # If more than one visit occur on the same day, only keep last
         udates, ucounts = np.unique(data_id[date_col].values, return_counts=True)
@@ -656,9 +669,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         data_id['closest_rel+'] = float('inf') if all(distp.isna()) else distp.min(axis=1)
 
         event_type, event_index = [''], []
-        bldate, blvalue, edate, evalue, time2event, bl2event = [], [], [], [], [], []
-        conf, sustd, sustl = {m : [] for m in conf_days}, [], []
-        pira_conf = {m : [] for m in conf_days} #[1:]}  #_piraconf_#
+        bl_date, bl_value, edate, evalue, time2event, bl2event = [], [], [], [], [], []
+        # conf, pira_conf = {m: [] for m in conf_days}, {m: [] for m in conf_days}
+        conf_date, conf_value = {m: [] for m in conf_days}, {m: [] for m in conf_days}
+        pira_conf_date, pira_conf_value = {m: [] for m in conf_days}, {m: [] for m in conf_days}
+        sustd, sustl = [], []
 
 
         bl_idx, search_idx = 0, 1 # baseline index and index of where we are in the search
@@ -754,7 +769,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 conf_t = {}
                 proceed = 0
                 if verbose == 2:
-                    print('No %s change in any subsequent visit: end process' %outcome.upper())
+                    print(f'No %s change in any subsequent visit: end process'
+                          %('outcome' if outcome == 'custom' else outcome.upper()))
             elif (relapse_rebl and irel is not None
                   and irel < nrel
                   and data_id.loc[change_idx, date_col]
@@ -775,7 +791,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 conf_idx = np.unique([x for i in range(len(conf_idx)) for x in conf_idx[i]])
                 if verbose == 2:
                     print('%s change at visit no.%d (%s); potential confirmation visits available: no.%s'
-                          %(outcome.upper(), change_idx + 1 ,
+                          %(('outcome' if outcome == 'custom' else outcome.upper()), change_idx + 1 ,
                             display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
                             ', '.join(['%d' %(i + 1) for i in conf_idx])))
 
@@ -789,7 +805,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                         baseline_delta=bl[valuedelta_col]) # value decreased (>delta) from baseline
                         and (all([isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
                                               baseline_delta=bl[valuedelta_col])
-                                 for x in range(change_idx+1,conf_idx[0]+1)]) # decrease is confirmed at all visits between event and confirmation visit
+                                 for x in range(change_idx+1, conf_idx[0]+1)]) # decrease is confirmed at all visits between event and confirmation visit
                             if check_intermediate else isevent_loc(data_id.loc[conf_idx[0],value_col], bl[value_col],
                                                         type='impr', baseline_delta=[valuedelta_col]))
                     ):
@@ -823,26 +839,32 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
                         event_type.append('CDI')
                         event_index.append(change_idx)
-                        bldate.append(display_date(bl[date_col], global_start)) #_d_#
-                        blvalue.append(bl[value_col])
+                        bl_date.append(display_date(bl[date_col], global_start)) #_d_#
+                        bl_value.append(bl[value_col])
                         edate.append(display_date(data_id.loc[change_idx,date_col], global_start)) #_d_#
                         evalue.append(data_id.loc[change_idx,value_col])
                         time2event.append(data_id.loc[change_idx,date_col] - data_id.loc[0,date_col]) #.days #_d_#
                         bl2event.append(data_id.loc[change_idx,date_col] - bl[date_col]) #.days #_d_#
                         for m in conf_days:
                             confirmed_at = np.intersect1d(conf_t[m], conf_idx)
-                            if len(confirmed_at)==0:
+                            if len(confirmed_at) == 0:
                                 del conf_t[m]
-                            conf[m].append(1 if len(confirmed_at)>0 else 0) #_conf_# 1 if m in conf_t else 0
-                        for m in conf_days: #[1:]: #_piraconf_#
-                            pira_conf[m].append(0)
+                                conf_date[m].append(display_date(None, global_start))
+                                conf_value[m].append(np.nan)
+                            else:
+                                conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
+                                conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
+                            # conf[m].append(1 if len(confirmed_at)>0 else 0)
+                            # pira_conf[m].append(0)
+                            pira_conf_date[m].append(display_date(None, global_start))
+                            pira_conf_value[m].append(np.nan)
                         sustd.append(data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
                         sustl.append(int(sust_idx == nvisits-1)) #int(data_id.loc[nvisits-1,value_col] - bl[value_col] <= - delta(bl[value_col]))
 
                         # Print progress info
                         if verbose == 2:
-                            print('%s improvement (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
-                                  %(outcome.upper(), change_idx+1,
+                            print('Found %sCDI (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
+                                  %(('' if outcome == 'custom' else (outcome.upper() + '-')), change_idx+1,
                                     display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
                                     ', '.join([str(x) for x in conf_t.keys()]),  #_conf_#
                                     sust_idx+1,
@@ -901,8 +923,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     search_idx = newref + 1
 
                     if verbose == 2:
-                        print('Confirmed sub-threshold %s improvement (visit no.%d)'
-                              %(outcome.upper(), change_idx + 1))
+                        print('Found confirmed sub-threshold %s improvement (visit no.%d)'
+                              %(('outcome' if outcome == 'custom' else outcome.upper()), change_idx + 1))
                         print(f'Baseline at visit no.{bl_idx + 1}')
 
                 # CONFIRMED WORSENING:
@@ -1035,23 +1057,26 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                 # pconf_idx = conf_idx if not any(rel_inbetween) else conf_idx[:next(i for i in
                                 #                                         range(len(conf_idx)) if rel_inbetween[i])]
                                 pconf_t = copy.deepcopy(conf_t) #_conf_# [conf_t[i] for i in range(len(conf_t)) if not rel_inbetween[i]] #conf_t[:len(pconf_idx)] # #_piraconf_#
-                                if len(pconf_idx)>0: # if pira is confirmed
-                                    ######## #_conf_#
+                                if len(pconf_idx) > 0: # if pira is confirmed
                                     for m in conf_days:
                                         confirmed_at = np.intersect1d(pconf_t[m], pconf_idx)
-                                        if len(confirmed_at)==0:
+                                        if len(confirmed_at) == 0:
                                             del pconf_t[m]
-                                        pira_conf[m].append(int(len(confirmed_at)>0))
-                                    ######## #_conf_#
+                                            pira_conf_date[m].append(display_date(None, global_start))
+                                            pira_conf_value[m].append(np.nan)
+                                        else:
+                                            pira_conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
+                                            pira_conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
+                                        #pira_conf[m].append(int(len(confirmed_at)>0))
 
                                     event_type.append('PIRA')
                                     event_index.append(change_idx)
-                                elif event=='firstPIRA' and baseline in ('fixed', 'roving_impr'):  # if pira is not confirmed, and we're not using it for rebaseline
-                                    if verbose==2:
+                                elif event == 'firstPIRA' and baseline in ('fixed', 'roving_impr'):  # if pira is not confirmed, and we're not using it for rebaseline
+                                    if verbose == 2:
                                         print('Worsening confirmed but not a PIRA event: skipped')
                                     include_event = False
                                 else:
-                                    event_type.append('undef_CDW')
+                                    event_type.append('CDW')
                                     event_index.append(change_idx)
                                 # )*
 
@@ -1060,10 +1085,12 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                             # **(
                             if event_type[-1] != 'PIRA':
                                 for m in conf_days:
-                                    pira_conf[m].append(0)
+                                    # pira_conf[m].append(0)
+                                    pira_conf_date[m].append(display_date(None, global_start))
+                                    pira_conf_value[m].append(np.nan)
 
-                            bldate.append(display_date(bl[date_col], global_start)) #_d_#
-                            blvalue.append(bl[value_col])
+                            bl_date.append(display_date(bl[date_col], global_start)) #_d_#
+                            bl_value.append(bl[value_col])
                             edate.append(display_date(data_id.loc[change_idx, date_col], global_start)) #_d_#
                             evalue.append(data_id.loc[change_idx, value_col])
                             time2event.append(data_id.loc[change_idx, date_col] - data_id.loc[0,date_col]) #.days #_d_#
@@ -1072,16 +1099,22 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                 confirmed_at = np.intersect1d(conf_t[m], conf_idx)
                                 if len(confirmed_at)==0:
                                     del conf_t[m]
-                                conf[m].append(1 if len(confirmed_at) > 0 else 0) #_conf_# 1 if m in conf_t else 0
-                            sustd.append(data_id.loc[sust_idx, date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
+                                    conf_date[m].append(display_date(None, global_start))
+                                    conf_value[m].append(np.nan)
+                                else:
+                                    conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
+                                    conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
+                                # conf[m].append(1 if len(confirmed_at) > 0 else 0)
+                            sustd.append(data_id.loc[sust_idx, date_col] - data_id.loc[change_idx, date_col]) #.days #_d_#
                             sustl.append(int(sust_idx == nvisits-1))
 
                             # Print info
                             if verbose == 2:
-                                print('%s %s (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
-                                      %(outcome.upper(), event_type[-1], change_idx+1,
+                                print('Found %sCDW%s (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
+                                      %(('' if outcome == 'custom' else (outcome.upper() + '-')),
+                                        ('' if event_type[-1] == 'CDW' else f' ({event_type[-1]})'), change_idx+1,
                                         display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
-                                        ', '.join([str(x) for x in (pconf_t.keys() if event_type[-1]=='PIRA'
+                                        ', '.join([str(x) for x in (pconf_t.keys() if event_type[-1] == 'PIRA'
                                                                     else conf_t.keys())]), #_conf_#
                                         sust_idx+1,
                                         display_date(data_id.loc[sust_idx, date_col], global_start, to_print=True))) #_d_#
@@ -1150,7 +1183,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     search_idx = newref + 1
 
                     if verbose == 2:
-                        print(f'Confirmed sub-threshold {outcome.upper()} worsening (visit no.{change_idx + 1})')
+                        print('Found confirmed sub-threshold %s worsening (visit no.%d)'
+                              %(('outcome' if outcome == 'custom' else outcome.upper()), change_idx + 1))
                         print(f'Baseline at visit no.{bl_idx + 1}')
 
                 # NO confirmation:
@@ -1198,21 +1232,21 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
             if proceed and (
                 (event == 'first' and len(event_type)>1)
-                or (event == 'firstCDW' and (('RAW' in event_type) or ('PIRA' in event_type) or ('undef_CDW' in event_type)))
+                or (event == 'firstCDW' and (('RAW' in event_type) or ('PIRA' in event_type) or ('CDW' in event_type)))
                 or (event == 'firstCDI' and ('CDI' in event_type))
                 or (event == 'firstPIRA' and ('PIRA' in event_type))
                 or (event == 'firstRAW' and ('RAW' in event_type))
                         ):
-                    proceed = 0
-                    if verbose == 2:
-                        print('\'%s\' events already found: end process' %event)
+                proceed = 0
+                if verbose == 2:
+                    print('\'%s\' already found: end process' %event)
 
         subj_index = results[results[subj_col]==subjid].index
 
+        # Possibly reduce event_type to a subset (based on `event` argument)
         if len(event_type) > 1:
 
-            event_type = event_type[1:] # remove first empty event
-
+            event_type = event_type[1:]  # remove first empty event
 
             # Spot duplicate events
             # (can only occur if relapse_rebl is enabled - in that case, only keep last detected)
@@ -1222,60 +1256,58 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
             diff = len(event_index) - len(np.unique(event_index)) # keep track of no. duplicates
             for ev in duplicates:
                 all_ind = np.where(event_index==ev)[0]
-                event_index[all_ind[:-1]] = -1 # mark duplicate events (all except last) with -1
+                event_index[all_ind[:-1]] = -1  # mark duplicate events (all except last) with -1
 
             event_order = np.argsort(event_index)
-            event_order = event_order[diff:] # eliminate duplicates (those marked with -1)
+            event_order = event_order[diff:]  # eliminate duplicates (those marked with -1)
 
             event_type = [event_type[i] for i in event_order]
 
             if event.startswith('first'):
                 impr_idx = next((x for x in range(len(event_type)) if event_type[x]=='CDI'), None)
-                prog_idx = next((x for x in range(len(event_type)) if event_type[x] in ('undef_CDW', 'RAW', 'PIRA')), None)
-                raw_idx = next((x for x in range(len(event_type)) if event_type[x]=='RAW'), None)
-                pira_idx = next((x for x in range(len(event_type)) if event_type[x]=='PIRA'), None)
-                undef_prog_idx = next((x for x in range(len(event_type)) if event_type[x]=='undef_CDW'), None)
-                if event=='firstCDW':
+                prog_idx = next((x for x in range(len(event_type)) if event_type[x] in ('CDW', 'RAW', 'PIRA')), None)
+                raw_idx = next((x for x in range(len(event_type)) if event_type[x] == 'RAW'), None)
+                pira_idx = next((x for x in range(len(event_type)) if event_type[x] == 'PIRA'), None)
+                if event == 'firstCDW':
                     first_events = [prog_idx]
-                elif event=='firstCDI':
+                elif event == 'firstCDI':
                     first_events = [impr_idx]
-                elif event=='firstPIRA':
+                elif event == 'firstPIRA':
                     first_events = [pira_idx]
-                elif event=='firstRAW':
+                elif event == 'firstRAW':
                     first_events = [raw_idx]
                 first_events = [0] if event=='first' else np.unique([
                     ii for ii in first_events if ii is not None]) # np.unique() returns the values already sorted
                 event_type = [event_type[ii] for ii in first_events]
                 event_order = [event_order[ii] for ii in first_events]
 
-            # if include_stable and len(event_type)==0:
-            #     results.drop(subj_index[1:], inplace=True)
-            #     results.loc[results[subj_col]==subjid, 'nevent'] = 0
-            #     results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
-            #     results.loc[results[subj_col]==subjid, 'time2event'] = total_fu[subjid]
-            #     # results.loc[results[subj_col]==subjid, 'date'] = display_date(data_id.loc[nvisits - 1, date_col],
-            #     #                                                               global_start)
-            #     results.loc[results[subj_col]==subjid, 'event_type'] = ''
-            # elif len(event_type)==0:
-            #     results.drop(subj_index, inplace=True)
-            # else:
+        else:
+            event_type = []
+
+        # Build results with updated event_type
+        if len(event_type) > 0:
+            # 1. subject has events
             results.drop(subj_index[len(event_type):], inplace=True)
             results.loc[results[subj_col]==subjid, 'event_type'] = event_type
-            results.loc[results[subj_col]==subjid, 'bldate'] = [bldate[i] for i in event_order]
-            results.loc[results[subj_col]==subjid, 'blvalue'] = [blvalue[i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'bl_date'] = [bl_date[i] for i in event_order]
+            results.loc[results[subj_col]==subjid, 'bl_value'] = [bl_value[i] for i in event_order]
             results.loc[results[subj_col]==subjid, 'date'] = [edate[i] for i in event_order]
             results.loc[results[subj_col]==subjid, 'value'] = [evalue[i] for i in event_order]
             results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
             results.loc[results[subj_col]==subjid, 'time2event'] = [time2event[i] for i in event_order]
             results.loc[results[subj_col]==subjid, 'bl2event'] = [bl2event[i] for i in event_order]
             for m in conf_days:
-                results.loc[results[subj_col]==subjid, 'conf'+str(m)] = [conf[m][i] for i in event_order]
+                # results.loc[results[subj_col]==subjid, f'conf{m}'] = [conf[m][i] for i in event_order]
+                results.loc[results[subj_col]==subjid, f'conf{m}_date'] = [conf_date[m][i] for i in event_order]
+                results.loc[results[subj_col]==subjid, f'conf{m}_value'] = [conf_value[m][i] for i in event_order]
+                # results.loc[results[subj_col]==subjid, f'PIRA_conf{m}'] = [pira_conf[m][i] for i in event_order]
+                results.loc[results[subj_col]==subjid, f'PIRA_conf{m}_date'] = [pira_conf_date[m][i] for i in event_order]
+                results.loc[results[subj_col]==subjid, f'PIRA_conf{m}_value'] = [pira_conf_value[m][i] for i in event_order]
             results.loc[results[subj_col]==subjid, 'sust_days'] = [sustd[i] for i in event_order]
             results.loc[results[subj_col]==subjid, 'sust_last'] = [sustl[i] for i in event_order]
-            for m in conf_days: #[1:]: #_piraconf_#
-                results.loc[results[subj_col]==subjid, 'PIRA_conf'+str(m)] = [pira_conf[m][i] for i in event_order]
 
         elif include_stable:
+            # 2. subject has no events but is included
             results.drop(subj_index[1:], inplace=True)
             results.loc[results[subj_col]==subjid, 'nevent'] = 0
             results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
@@ -1284,26 +1316,27 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
             #                                                               global_start)
 
         else:
+            # 3. subject has no events and is excluded
             results.drop(subj_index, inplace=True)
 
-        CDI = (results.loc[results[subj_col]==subjid, 'event_type']=='CDI').sum()
-        CDW = results.loc[results[subj_col]==subjid, 'event_type'].isin(('undef_CDW', 'RAW', 'PIRA')).sum()
-        undef_CDW = (results.loc[results[subj_col]==subjid, 'event_type']=='undef_CDW').sum()
-        RAW = (results.loc[results[subj_col]==subjid, 'event_type']=='RAW').sum()
-        PIRA = (results.loc[results[subj_col]==subjid, 'event_type']=='PIRA').sum()
-        summary.loc[subjid, ['event_sequence', 'CDI', 'CDW',
-                'RAW', 'PIRA', 'undef_CDW']] = [', '.join(event_type), CDI, CDW,
-                                                     RAW, PIRA, undef_CDW]
-        # if event.startswith('firstCDW'):
-        #     summary.drop(columns=['CDI'], inplace=True)
+        CDI = (results.loc[results[subj_col] == subjid, 'event_type'] == 'CDI').sum()
+        CDW = results.loc[results[subj_col] == subjid, 'event_type'].isin(('CDW', 'RAW', 'PIRA')).sum()
+        RAW = (results.loc[results[subj_col] == subjid, 'event_type'] == 'RAW').sum()
+        PIRA = (results.loc[results[subj_col] == subjid, 'event_type'] == 'PIRA').sum()
+        summary.loc[subjid, ['event_sequence', 'CDI', 'CDW', 'RAW', 'PIRA']] = [
+            ', '.join(event_type), CDI, CDW, RAW, PIRA]
 
         if verbose == 2:
             print('Event sequence: %s' %(', '.join(event_type) if len(event_type)>0 else '-'))
 
+    results['CDW_type'] = results['event_type'].map(lambda x: x if x in ('PIRA', 'RAW') else
+                                                      ('undefined' if x == 'CDW' else ''))
+    results.loc[results['event_type'].isin(('CDW', 'PIRA', 'RAW')), 'event_type'] = 'CDW'
+
     if verbose >= 1:
-        print(f'\n---\nOutcome: {outcome.upper()}\nConfirmation {"over" if check_intermediate else "at"}: '
+        print(f'\n---\nOutcome: {outcome}\nConfirmation {"over" if check_intermediate else "at"}: '
         + '; '.join([f'{c} (-{conf_tol_days[c][0]}, +{"inf" if conf_tol_days[c][1]==np.inf else str(conf_tol_days[c][1])}) days' for c in conf_days])
-        + f'\nBaseline: {baseline}' + (f' (including sub-threshold {sub_threshold_rebl})' if baseline!='fixed' and sub_threshold_rebl!="none" else '')
+        + f'\nBaseline: {baseline}' + (f' (including sub-threshold {sub_threshold_rebl})' if baseline != 'fixed' and sub_threshold_rebl!="none" else '')
         + (' (and post-relapse re-baseline)' if relapse_rebl else '')
         + f'\nRelapse influence (baseline): {relapse_to_bl} days\nRelapse influence (event): {relapse_to_event} days'
         + f'\nRelapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {event}')
@@ -1340,7 +1373,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     results = results[columns]
 
     if return_unconfirmed:
-        unconfirmed = pd.DataFrame(unconf, columns=[subj_col, 'date', 'value', 'bldate', 'blvalue',
+        unconfirmed = pd.DataFrame(unconf, columns=[subj_col, 'date', 'value', 'bl_date', 'bl_value',
                                                     'closest_rel-', 'closest_rel+'])
 
     for w in warning_msgs:
@@ -1374,6 +1407,7 @@ def compute_delta(baseline, outcome='edss'):
     -------
     float
         Minimum clinically meaningful change from the provided baseline value. Specifically:
+
         - EDSS: 1.5 if `baseline`=0, 1 if 0<`baseline`<=5.0, 0.5 if `baseline`>5.0
         - NHPT and T25FW: 20`%` of `baseline`
         - SDMT: either 3 points or 10`%` of `baseline`.
@@ -1399,14 +1433,14 @@ def compute_delta(baseline, outcome='edss'):
     elif outcome == 'sdmt':
         if baseline < 0 or baseline > 110:
             raise ValueError('invalid SDMT score')
-        return min(baseline/10, 3)
+        return min(baseline/5, 4)
     else:
         raise Exception('outcome must be one of: \'edss\',\'nhpt\',\'t25fw\',\'sdmt\'')
 
 
 #####################################################################################
 
-def is_event(x, baseline, type, outcome=None, worsening=None,
+def is_event(x, baseline, type, outcome, worsening=None,
              sub_threshold=False, delta_fun=None, baseline_delta=None):
     '''
 
@@ -1421,12 +1455,12 @@ def is_event(x, baseline, type, outcome=None, worsening=None,
      type: str
         'wors' or 'impr' or 'change'.
      outcome: str
-        Outcome type (one of: 'edss','nhpt','t25fw','sdmt', None).
-        Outcome type (if not None) determines a default direction of worsening (see ``worsening`` argument)
+        Outcome type (one of: 'edss','nhpt','t25fw','sdmt', 'custom').
+        Outcome type (if not 'custom') determines a default direction of worsening (see ``worsening`` argument)
         and default definition of clinically meaningful change given the reference value
         (using the built-in function :func:`compute_delta()`).
      worsening: str
-        'increase' or 'decrease'. If outcome is specified, the argument is ignored
+        'increase' or 'decrease'. If outcome is not 'custom', the argument is ignored
         and the direction of worsening is automatically assigned
         ('increase' for edss, nhpt, t25fw; 'decrease' for sdmt)
      sub_threshold: bool
@@ -1436,8 +1470,9 @@ def is_event(x, baseline, type, outcome=None, worsening=None,
         in the outcome measure from the provided reference value.
         The function provided must take a numeric value (reference score) as input,
         and return a numeric value corresponding to the minimum shift from baseline.
-        If none is specified (default), the user must provide a non-None value for
-        the ``outcome`` argument (see above) in order to use the built-in function :func:`compute_delta()`.
+        A custom delta function must be specified if ``outcome`` is set to 'custom'
+        (see above). Otherwise, if none is specified, the built-in function :func:`compute_delta()`
+        is used internally.
         The argument is ignored if ``sub_threshold=True``.
      baseline_delta: float
         Baseline value to use to compute clinically meaningful change, if different from baseline.
@@ -1455,14 +1490,14 @@ def is_event(x, baseline, type, outcome=None, worsening=None,
     elif outcome == 'sdmt':
         worsening = 'decrease'
     elif worsening is None:
-        raise ValueError('Either specify a valid outcome type, or specify worsening direction')
+        raise ValueError('If using outcome=\'custom\', you must specify worsening direction')
     improvement = 'increase' if worsening == 'decrease' else 'decrease'
 
     if sub_threshold:
         event_sign = {'increase': x > baseline, 'decrease': x < baseline, 'change': x != baseline}
     else:
-        if delta_fun is None and outcome is None and not sub_threshold:
-            raise ValueError('Either specify a valid outcome type, or specify a custom `delta_fun`')
+        if delta_fun is None and outcome == 'custom':  #and not sub_threshold:
+            raise ValueError('If using outcome=\'custom\', you must specify a custom `delta_fun`')
         elif delta_fun is None:
             fun_tmp = compute_delta
         else:
@@ -1596,7 +1631,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
     Returns
     -------
     pandas.DataFrame
-        Including columns:
+        A data frame including columns:
 
         - ``date_col`` -- date of first reaching or exceeding the milestone (or last date of follow-up if milestone is not reached);
         - ``value_col`` -- first value reaching or exceeding the milestone, if present;
@@ -1686,6 +1721,9 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
         validconf_col = 'validconf'
         data.loc[:, validconf_col] = 1
 
+    # Convert outcome value column to float
+    data[value_col] = data[value_col].astype(float)
+
     # Remove missing values from columns of interest
     data = data[[subj_col, value_col, date_col, validconf_col]].dropna()
 
@@ -1694,7 +1732,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
         try:
             data[date_col] = pd.to_datetime(data[date_col], format=date_format)
         except:
-            raise ValueError(f'Failed to intepret \'{date_col}\' column as dates; please provide correct format via `date_format` argument.')
+            raise ValueError(f"Failed to intepret '{date_col}' column as dates; please provide correct format via `date_format` argument.")
     if relapse is None:
         relapsedata = False
         relapse = pd.DataFrame([], columns=[rsubj_col, rdate_col])
@@ -1706,7 +1744,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
             try:
                 relapse[rdate_col] = pd.to_datetime(relapse[rdate_col], format=date_format)
             except:
-                raise ValueError(f'Failed to intepret \'{rdate_col}\' column as dates; please provide correct format via `date_format` argument.')
+                raise ValueError(f"Failed to intepret '{rdate_col}' column as dates; please provide correct format via `date_format` argument.")
         relapse_start = relapse[rdate_col].min()
     # Convert dates to days from minimum #_d_#
     if date_format != 'day':
@@ -1726,10 +1764,12 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
 
     # Local function to display dates/days
     def display_date(day, start, to_print=False):
-        if date_format == 'day':
+        if day is None:
+            return '' if to_print else (np.nan if date_format == 'day' else pd.NaT)
+        elif date_format == 'day':
             return f'day {day:.0f}' if to_print else day
         else:
-            return start.date() + datetime.timedelta(days=day.item())
+            return (start.date() if to_print else start) + datetime.timedelta(days=day.item())
 
     conf_window = [(int(c) - conf_tol_days[0], int(c) + conf_tol_days[1]) for c in conf_days]
 
@@ -2005,7 +2045,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
     Returns
     -------
-        pandas.DataFrame or (pandas.DataFrame, pandas.DataFrame)
+    pandas.DataFrame or (pandas.DataFrame, pandas.DataFrame)
         The original DataFrame (``data``) is returned with the addition of the following columns:
 
         - ``f'ric_{value_col}'``: cumulative relapse-independent change from baseline
@@ -2136,6 +2176,9 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
     data_sep = data.copy()
     relapse = relapse.copy()
 
+    # Convert outcome value column to float
+    data_sep[value_col] = data_sep[value_col].astype(float)
+
     # Remove missing values from columns of interest
     data_sep = data_sep.dropna(subset=[subj_col, value_col, date_col, validconf_col])
     relapse = relapse[[rsubj_col, rdate_col]].copy().dropna()
@@ -2161,10 +2204,12 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
     # Local function to display dates/days
     def display_date(day, start, to_print=False):
-        if date_format == 'day':
+        if day is None:
+            return '' if to_print else (np.nan if date_format == 'day' else pd.NaT)
+        elif date_format == 'day':
             return f'day {day:.0f}' if to_print else day
         else:
-            return start.date() + datetime.timedelta(days=day.item())
+            return (start.date() if to_print else start) + datetime.timedelta(days=day.item())
 
     ri_col, ra_col, bump_col = 'ric_' + value_col, 'rac_' + value_col, 'bumps_' + value_col
     data_sep[ra_col] = 0.
@@ -2465,7 +2510,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
         if len(data_id)>0:
             data_sep.loc[data[subj_col]==subjid,:] = data_id.drop(columns=['closest_rel-', 'closest_rel+']).values
 
-    data_sep[date_col] = [display_date(int(data_sep.loc[ii, date_col]), global_start) for ii in data_sep.index]
+    data_sep[date_col] = [display_date(data_sep.loc[ii, date_col], global_start) for ii in data_sep.index]
     if date_format != 'day':
         data_sep[date_col] = pd.to_datetime(data_sep[date_col])
 

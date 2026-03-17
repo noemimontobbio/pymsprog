@@ -7,7 +7,7 @@
         <link rel="prefetch" href="_static/logo_py.png" as="image" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2025.07.19 -->
-        <title>pymsprog package - pymsprog 1.0.3 documentation</title>
+        <title>pymsprog package - pymsprog 1.0.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css?v=6644e6bb" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">pymsprog 1.0.3 documentation</div></a>
+      <a href="index.html"><div class="brand">pymsprog 1.0.5 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -194,7 +194,7 @@
     <img class="sidebar-logo" src="_static/logo_py.png" alt="Logo"/>
   </div>
   
-  <span class="sidebar-brand-text">pymsprog 1.0.3 documentation</span>
+  <span class="sidebar-brand-text">pymsprog 1.0.5 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -283,7 +283,7 @@ by the user and reported as a complement to the results to ensure reproducibilit
 <li><p>’nhpt’ (Nine-Hole Peg Test)</p></li>
 <li><p>’t25fw’ (Timed 25-Foot Walk)</p></li>
 <li><p>’sdmt’ (Symbol Digit Modalities Test)</p></li>
-<li><p>None (only accepted when specifying custom <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> and <code class="docutils literal notranslate"><span class="pre">worsening</span></code>).</p></li>
+<li><p>’custom’ (only accepted when specifying custom <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> and <code class="docutils literal notranslate"><span class="pre">worsening</span></code>).</p></li>
 </ul>
 <p>Outcome type determines a default direction of worsening (see <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument)
 and default definition of clinically meaningful change given the reference value
@@ -297,10 +297,11 @@ and default definition of clinically meaningful change given the reference value
 in the outcome measure from the provided reference value.
 The function provided must take a numeric value (reference score) as input,
 and return a numeric value corresponding to the minimum shift from baseline.
-If none is specified (default), the user must provide a non-None value for
-the <code class="docutils literal notranslate"><span class="pre">outcome</span></code> argument (see above) in order to use the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>.</p></li>
+A custom delta function must be specified if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘custom’
+(see above). Otherwise, if none is specified, the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>
+is used internally.</p></li>
 <li><p><strong>worsening</strong> (<em>str</em>) – The direction of worsening (‘increase’ if higher values correspond to worse disease course, ‘decrease’ otherwise).
-This argument is only used when <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to None. Otherwise, <code class="docutils literal notranslate"><span class="pre">worsening</span></code> is automatically set to
+This argument is only used when <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘custom’. Otherwise, <code class="docutils literal notranslate"><span class="pre">worsening</span></code> is automatically set to
 ‘increase’ if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘edss’, ‘nhpt’, ‘t25fw’, and to ‘decrease’ if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘sdmt’.</p></li>
 <li><p><strong>valuedelta_col</strong> (<em>str</em>) – <p>Name of data column with alternative outcome value to use as baseline for delta function.
 It may be used, for instance, when analysing <em>partial</em> disability trajectories extracted
@@ -468,9 +469,9 @@ If a value <code class="docutils literal notranslate"><span class="pre">N&gt;1</
 <p>If not specified, function <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.to_datetime()</span></code> will try to infer it automatically.</p>
 </p></li>
 <li><p><strong>include_dates</strong> (<em>bool</em>) – If True, the <code class="docutils literal notranslate"><span class="pre">results</span></code> DataFrame will include the date of each event (‘date’ column)
-and the date of the corresponding baseline (‘bldate’ column).</p></li>
+and the date of the corresponding baseline (‘bl_date’ column).</p></li>
 <li><p><strong>include_value</strong> (<em>bool</em>) – If True, the <code class="docutils literal notranslate"><span class="pre">results</span></code> DataFrame will include the outcome value at each event (‘value’ column)
-and at the corresponding baseline (‘blvalue’ column).</p></li>
+and at the corresponding baseline (‘bl_value’ column).</p></li>
 <li><p><strong>include_stable</strong> (<em>bool</em>) – If True, subjects with no confirmed events are included in the <code class="docutils literal notranslate"><span class="pre">results</span></code> DataFrame,
 with ‘time2event’ = total follow up.</p></li>
 <li><p><strong>return_unconfirmed</strong> (<em>bool</em>) – If True, return an additional DataFrame including unconfirmed changes.</p></li>
@@ -528,10 +529,13 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Minimum clinically meaningful change from the provided baseline value. Specifically:
-- EDSS: 1.5 if <cite>baseline`=0, 1 if 0&lt;`baseline`&lt;=5.0, 0.5 if `baseline</cite>&gt;5.0
-- NHPT and T25FW: 20`%` of <cite>baseline</cite>
-- SDMT: either 3 points or 10`%` of <cite>baseline</cite>.</p>
+<dd class="field-even"><p><p>Minimum clinically meaningful change from the provided baseline value. Specifically:</p>
+<ul class="simple">
+<li><p>EDSS: 1.5 if <cite>baseline`=0, 1 if 0&lt;`baseline`&lt;=5.0, 0.5 if `baseline</cite>&gt;5.0</p></li>
+<li><p>NHPT and T25FW: 20`%` of <cite>baseline</cite></p></li>
+<li><p>SDMT: either 3 points or 10`%` of <cite>baseline</cite>.</p></li>
+</ul>
+</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
@@ -541,7 +545,7 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pymsprog.is_event">
-<span class="sig-prename descclassname"><span class="pre">pymsprog.</span></span><span class="sig-name descname"><span class="pre">is_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worsening</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline_delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pymsprog.is_event" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">pymsprog.</span></span><span class="sig-name descname"><span class="pre">is_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worsening</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline_delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pymsprog.is_event" title="Link to this definition">¶</a></dt>
 <dd><p>Check for change from baseline.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -549,11 +553,11 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 <li><p><strong>x</strong> (<em>float</em>) – New value.</p></li>
 <li><p><strong>baseline</strong> (<em>float</em>) – Baseline value.</p></li>
 <li><p><strong>type</strong> (<em>str</em>) – ‘wors’ or ‘impr’ or ‘change’.</p></li>
-<li><p><strong>outcome</strong> (<em>str</em>) – Outcome type (one of: ‘edss’,’nhpt’,’t25fw’,’sdmt’, None).
-Outcome type (if not None) determines a default direction of worsening (see <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument)
+<li><p><strong>outcome</strong> (<em>str</em>) – Outcome type (one of: ‘edss’,’nhpt’,’t25fw’,’sdmt’, ‘custom’).
+Outcome type (if not ‘custom’) determines a default direction of worsening (see <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument)
 and default definition of clinically meaningful change given the reference value
 (using the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>).</p></li>
-<li><p><strong>worsening</strong> (<em>str</em>) – ‘increase’ or ‘decrease’. If outcome is specified, the argument is ignored
+<li><p><strong>worsening</strong> (<em>str</em>) – ‘increase’ or ‘decrease’. If outcome is not ‘custom’, the argument is ignored
 and the direction of worsening is automatically assigned
 (‘increase’ for edss, nhpt, t25fw; ‘decrease’ for sdmt)</p></li>
 <li><p><strong>sub_threshold</strong> (<em>bool</em>) – Whether to retain events below the clinically meaningful change from baseline.</p></li>
@@ -561,8 +565,9 @@ and the direction of worsening is automatically assigned
 in the outcome measure from the provided reference value.
 The function provided must take a numeric value (reference score) as input,
 and return a numeric value corresponding to the minimum shift from baseline.
-If none is specified (default), the user must provide a non-None value for
-the <code class="docutils literal notranslate"><span class="pre">outcome</span></code> argument (see above) in order to use the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>.
+A custom delta function must be specified if <code class="docutils literal notranslate"><span class="pre">outcome</span></code> is set to ‘custom’
+(see above). Otherwise, if none is specified, the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>
+is used internally.
 The argument is ignored if <code class="docutils literal notranslate"><span class="pre">sub_threshold=True</span></code>.</p></li>
 <li><p><strong>baseline_delta</strong> (<em>float</em>) – Baseline value to use to compute clinically meaningful change, if different from baseline.</p></li>
 </ul>
@@ -594,15 +599,15 @@ relapse info.</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>The dataset is loaded from an Excel file (<code class="docutils literal notranslate"><span class="pre">MSprog_toydata.xlsx</span></code>) bundled with the package.
-The <code class="docutils literal notranslate"><span class="pre">visits</span></code> sheet includes the following columns.</p>
+<p>The dataset is loaded from two .csv files (<code class="docutils literal notranslate"><span class="pre">MSprog_toydata_visits.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">MSprog_toydata_relapses.csv</span></code>) bundled with the package.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">_visits</span></code> file includes the following columns.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">id</span></code>: subject identifier.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">date</span></code>: visit date.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">EDSS</span></code>: EDSS score.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">SDMT</span></code>: SDMT score.</p></li>
 </ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">relapses</span></code> sheet includes the following columns.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">_relapses</span></code> file includes the following columns.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">id</span></code>: subject identifier.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">date</span></code>: relapse onset date.</p></li>
@@ -711,18 +716,20 @@ for each subject.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><em>pandas.DataFrame or (pandas.DataFrame, pandas.DataFrame)</em></p></li>
-<li><p>The original DataFrame (<code class="docutils literal notranslate"><span class="pre">data</span></code>) is returned with the addition of the following columns</p></li>
-<li><p><strong>- ``f’ric_{value_col}’``</strong> (<em>cumulative relapse-independent change from baseline</em>)</p></li>
-<li><p><strong>- ``f’srac_{value_col}’``</strong> (<em>cumulative sustained relapse-associated change from baseline</em>)</p></li>
-<li><p><strong>- ``f’bumps_{value_col}’``</strong> (<em>transient relapse-associated changes (bumps)</em>)</p></li>
-<li><p><strong>- ``f’bl_{value_col}’``</strong> (baseline score (if <code class="docutils literal notranslate"><span class="pre">include_bl=True</span></code>))</p></li>
-<li><p><strong>- ‘relapse_num’</strong> (cumulative relapse number (if <code class="docutils literal notranslate"><span class="pre">include_rel_num=True</span></code>))</p></li>
-<li><p>If <code class="docutils literal notranslate"><span class="pre">include_raw_dates=True</span></code>, an additional DataFrame containing the dates of detected</p></li>
-<li><p><em>RAW events for each subject is also returned.</em></p></li>
+<dd class="field-even"><p><p>The original DataFrame (<code class="docutils literal notranslate"><span class="pre">data</span></code>) is returned with the addition of the following columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">f'ric_{value_col}'</span></code>: cumulative relapse-independent change from baseline</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">f'srac_{value_col}'</span></code>: cumulative sustained relapse-associated change from baseline</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">f'bumps_{value_col}'</span></code>: transient relapse-associated changes (bumps)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">f'bl_{value_col}'</span></code>: baseline score (if <code class="docutils literal notranslate"><span class="pre">include_bl=True</span></code>)</p></li>
+<li><p>’relapse_num’: cumulative relapse number (if <code class="docutils literal notranslate"><span class="pre">include_rel_num=True</span></code>)</p></li>
 </ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">include_raw_dates=True</span></code>, an additional DataFrame containing the dates of detected
+RAW events for each subject is also returned.</p>
 </p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame or (pandas.DataFrame, pandas.DataFrame)</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -830,7 +837,7 @@ If a value <code class="docutils literal notranslate"><span class="pre">N&gt;1</
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><p>Including columns:</p>
+<dd class="field-even"><p><p>A data frame including columns:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">date_col</span></code> – date of first reaching or exceeding the milestone (or last date of follow-up if milestone is not reached);</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">value_col</span></code> – first value reaching or exceeding the milestone, if present;</p></li>
@@ -926,7 +933,7 @@ Time windows for confirmation visits are determined by arguments
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=baaebd52"></script>
+</div><script src="_static/documentation_options.js?v=d55fa986"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

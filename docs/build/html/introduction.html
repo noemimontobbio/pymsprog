@@ -7,7 +7,7 @@
         <link rel="prefetch" href="_static/logo_py.png" as="image" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2025.07.19 -->
-        <title>pymsprog: reproducible assessment of disability course in MS - pymsprog 1.0.3 documentation</title>
+        <title>pymsprog: reproducible assessment of disability course in MS - pymsprog 1.0.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css?v=6644e6bb" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">pymsprog 1.0.3 documentation</div></a>
+      <a href="index.html"><div class="brand">pymsprog 1.0.5 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -194,7 +194,7 @@
     <img class="sidebar-logo" src="_static/logo_py.png" alt="Logo"/>
   </div>
   
-  <span class="sidebar-brand-text">pymsprog 1.0.3 documentation</span>
+  <span class="sidebar-brand-text">pymsprog 1.0.5 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -268,7 +268,7 @@ measure) for one or more subjects, based on repeated assessments through
 time and on the dates of acute episodes (if any).</p>
 <p>The package also provides a small toy dataset for testing and demonstration purposes.
 The dataset contains artificially generated Extended Disability Status Scale (EDSS) and
-Symbol Digit Modalities Test (SDMT) longidutinal scores, visit dates, and relapse onset dates
+Symbol Digit Modalities Test (SDMT) longitudinal scores, visit dates, and relapse onset dates
 in a small cohort of example patients.</p>
 <p><strong>If you use this package in your work, please cite as follows:</strong><br />
 Montobbio N, Carmisciano L, Signori A, et al.
@@ -300,21 +300,22 @@ the default settings.</p>
 
 <span class="n">toydata_visits</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">   id       date  EDSS  SDMT</span>
-<span class="sd">0   1 2021-09-23   4.5    50</span>
-<span class="sd">1   1 2021-11-03   4.5    50</span>
-<span class="sd">2   1 2022-01-19   4.5    51</span>
-<span class="sd">3   1 2022-04-27   4.5    57</span>
-<span class="sd">4   1 2022-07-12   5.5    55</span>
+<span class="sd">   id        date  visit_day  EDSS  SDMT</span>
+<span class="sd">0   1  2021-09-23          0   5.5    54</span>
+<span class="sd">1   1  2021-11-03         41   5.5    54</span>
+<span class="sd">2   1  2022-01-19        118   5.5    57</span>
+<span class="sd">3   1  2022-04-27        216   5.5    55</span>
+<span class="sd">4   1  2022-07-12        292   6.0    57</span>
 <span class="sd">&#39;&#39;&#39;</span>
 
 <span class="n">toydata_relapses</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">   id       date</span>
-<span class="sd">0   2 2021-06-12</span>
-<span class="sd">1   2 2022-10-25</span>
-<span class="sd">2   3 2022-12-01</span>
-<span class="sd">3   6  2022-12-18</span>
+<span class="sd">   id        date  visit_day</span>
+<span class="sd">0   2  2021-06-12        198</span>
+<span class="sd">1   2  2022-10-25        698</span>
+<span class="sd">2   3  2022-12-01        409</span>
+<span class="sd">3   6  2022-12-18        426</span>
+<span class="sd">4   7  2021-09-11        185</span>
 <span class="sd">&#39;&#39;&#39;</span>
 
 <span class="c1"># Detect events</span>
@@ -324,18 +325,17 @@ the default settings.</p>
                  <span class="n">outcome</span><span class="o">=</span><span class="s1">&#39;edss&#39;</span><span class="p">)</span>                                   <span class="c1"># specify outcome type</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">---</span>
-<span class="sd">Outcome: EDSS</span>
+<span class="sd">Outcome: edss</span>
 <span class="sd">Confirmation over: 84 (-7, +730.5) days</span>
 <span class="sd">Baseline: fixed</span>
 <span class="sd">Relapse influence (baseline): [30, 0] days</span>
 <span class="sd">Relapse influence (event): [0, 0] days</span>
 <span class="sd">Relapse influence (confirmation): [30, 0] days</span>
 <span class="sd">Events detected: firstCDW</span>
-<span class="sd">        </span>
 <span class="sd">---</span>
-<span class="sd">Total subjects: 6</span>
+<span class="sd">Total subjects: 7</span>
 <span class="sd">---</span>
-<span class="sd">Subjects with disability worsening: 3 (PIRA: 2; RAW: 1)</span>
+<span class="sd">Subjects with CDW: 4 (PIRA: 3; RAW: 1)</span>
 <span class="sd">&#39;&#39;&#39;</span>
 </pre></div>
 </div>
@@ -351,70 +351,68 @@ each event (<code class="docutils literal notranslate"><span class="pre">event='
                  <span class="n">event</span><span class="o">=</span><span class="s1">&#39;multiple&#39;</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s1">&#39;roving&#39;</span><span class="p">)</span>              <span class="c1"># modify default settings</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">---</span>
-<span class="sd">Outcome: EDSS</span>
+<span class="sd">Outcome: edss</span>
 <span class="sd">Confirmation over: 84 (-7, +730.5) days</span>
 <span class="sd">Baseline: roving</span>
 <span class="sd">Relapse influence (baseline): [30, 0] days</span>
 <span class="sd">Relapse influence (event): [0, 0] days</span>
 <span class="sd">Relapse influence (confirmation): [30, 0] days</span>
 <span class="sd">Events detected: multiple</span>
-<span class="sd">        </span>
 <span class="sd">---</span>
-<span class="sd">Total subjects: 6</span>
+<span class="sd">Total subjects: 7</span>
 <span class="sd">---</span>
-<span class="sd">Subjects with CDW: 4 (PIRA: 4; RAW: 1)</span>
+<span class="sd">Subjects with CDW: 5 (PIRA: 5; RAW: 1)</span>
 <span class="sd">Subjects with CDI: 2</span>
 <span class="sd">---</span>
-<span class="sd">CDW events: 5 (PIRA: 4; RAW: 1)</span>
+<span class="sd">CDW events: 6 (PIRA: 5; RAW: 1)</span>
 <span class="sd">CDI events: 2</span>
 <span class="sd">&#39;&#39;&#39;</span>
 </pre></div>
 </div>
 <p>The function prints out a concise report of the results, as well as
 <strong>the specific set of options used to obtain them</strong>.
-Complete results are stored in two <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> objects generated by the function call:</p>
+Complete results are stored in the following two <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> objects generated by the function call.</p>
 <ol class="arabic simple">
-<li><p>A summary table providing the event count for each subject and event type:</p></li>
+<li><p>Extended info on each event for all subjects:</p></li>
 </ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">   id  nevent event_type CDW_type  total_fu  time2event  bl2event  sust_days  sust_last</span>
+<span class="sd">0   1       1        CDW     PIRA     534.0       292.0     292.0      242.0        1.0</span>
+<span class="sd">1   2       1        CDW      RAW     730.0       198.0     198.0       84.0        0.0</span>
+<span class="sd">2   2       2        CDW     PIRA     730.0       539.0     257.0      191.0        1.0</span>
+<span class="sd">3   3       0                         491.0       491.0       NaN        0.0        0.0</span>
+<span class="sd">4   4       1        CDI              586.0        77.0      77.0       98.0        0.0</span>
+<span class="sd">5   4       2        CDW     PIRA     586.0       304.0     129.0      282.0        1.0</span>
+<span class="sd">6   5       1        CDW     PIRA     637.0       140.0     140.0      497.0        1.0</span>
+<span class="sd">7   6       1        CDI              491.0       120.0     120.0      232.0        0.0</span>
+<span class="sd">8   7       1        CDW     PIRA     779.0       372.0     372.0      407.0        1.0</span>
+<span class="sd">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+<p>where: <code class="docutils literal notranslate"><span class="pre">nevent</span></code> is the cumulative event count for each subject; <code class="docutils literal notranslate"><span class="pre">event_type</span></code> and <code class="docutils literal notranslate"><span class="pre">CDW_type</span></code> characterise the event;
+<code class="docutils literal notranslate"><span class="pre">total_fu</span></code> is the total follow-up period of the subject in days;
+<code class="docutils literal notranslate"><span class="pre">time2event</span></code> is the number of days from the beginning of the follow-up to the event
+(coincides with length of follow-up if no event is detected);
+<code class="docutils literal notranslate"><span class="pre">bl2event</span></code> is the number of days from the current baseline to the event;
+<code class="docutils literal notranslate"><span class="pre">sust_days</span></code> is the number of days for which the event was sustained;
+<code class="docutils literal notranslate"><span class="pre">sust_last</span></code> reports whether the event was sustained until the last visit.</p>
+<p>2A summary table providing the event count for each subject and event type:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
 <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">  event_sequence  CDI  CDW  RAW  PIRA  undef_CDW</span>
-<span class="sd">1           PIRA    0    1    0     1          0</span>
-<span class="sd">2      RAW, PIRA    0    2    1     1          0</span>
-<span class="sd">3                   0    0    0     0          0</span>
-<span class="sd">4      CDI, PIRA    1    1    0     1          0</span>
-<span class="sd">5           PIRA    0    1    0     1          0</span>
-<span class="sd">6            CDI    1    0    0     0          0</span>
+<span class="sd">  event_sequence  CDI  CDW  RAW  PIRA</span>
+<span class="sd">1           PIRA    0    1    0     1</span>
+<span class="sd">2      RAW, PIRA    0    2    1     1</span>
+<span class="sd">3                   0    0    0     0</span>
+<span class="sd">4      CDI, PIRA    1    1    0     1</span>
+<span class="sd">5           PIRA    0    1    0     1</span>
+<span class="sd">6            CDI    1    0    0     0</span>
+<span class="sd">7           PIRA    0    1    0     1</span>
 <span class="sd">&#39;&#39;&#39;</span>
 </pre></div>
 </div>
 <p>where: <code class="docutils literal notranslate"><span class="pre">event_sequence</span></code> specifies the order of the events;
 the other columns count the events of each type.</p>
-<ol class="arabic simple" start="2">
-<li><p>Extended info on each event for all subjects:</p></li>
-</ol>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">   id  nevent event_type total_fu  time2event bl2event conf84 PIRA_conf84 sust_days sust_last</span>
-<span class="sd">0   1       1       PIRA      534         292    292.0      1           1       242         1</span>
-<span class="sd">1   2       1        RAW      730         198    198.0      1        None        84         0</span>
-<span class="sd">2   2       2       PIRA      730         539    257.0      1           1       191         1</span>
-<span class="sd">3   3       0       None      491         491     None   None        None      None      None</span>
-<span class="sd">4   4       1       impr      586          77     77.0      1        None        98         0</span>
-<span class="sd">5   4       2       PIRA      586         304    129.0      1           1       282         1</span>
-<span class="sd">6   5       1       PIRA      637         140    140.0      1           1       497         1</span>
-<span class="sd">7   6       1       impr      491         120    120.0      1        None       232         0</span>
-<span class="sd">&#39;&#39;&#39;</span>
-</pre></div>
-</div>
-<p>where: <code class="docutils literal notranslate"><span class="pre">nevent</span></code> is the cumulative event count for each subject; <code class="docutils literal notranslate"><span class="pre">event_type</span></code> characterises the event;
-<code class="docutils literal notranslate"><span class="pre">total_fu</span></code> is the total follow-up period of the subject in days;
-<code class="docutils literal notranslate"><span class="pre">time2event</span></code> is the number of days from the beginning of the follow-up to the event
-(coincides with length of follow-up if no event is detected);
-<code class="docutils literal notranslate"><span class="pre">bl2event</span></code> is the number of days from the current baseline to the event;
-<code class="docutils literal notranslate"><span class="pre">conf84</span></code> reports whether the event was confirmed over 84 days (12 weeks);
-<code class="docutils literal notranslate"><span class="pre">sust_days</span></code> is the number of days for which the event was sustained;
-<code class="docutils literal notranslate"><span class="pre">sust_last</span></code> reports whether the event was sustained until the last visit.</p>
 </section>
 </section>
 
@@ -487,7 +485,7 @@ the other columns count the events of each type.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=baaebd52"></script>
+</div><script src="_static/documentation_options.js?v=d55fa986"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
