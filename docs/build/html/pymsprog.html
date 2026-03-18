@@ -410,26 +410,18 @@ events will be confirmed <em>only at</em> the specified confirmation visit
 Can be a single value (minimum distance from <em>last</em> relapse) or array-like of length 2
 (minimum distance from <em>last</em> relapse, minimum distance from <em>next</em> relapse).
 Note that setting the distance to zero means keeping the baseline where it is regardless of surrounding relapses.
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the minimum distance from last relapse
-# is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
 If the designated baseline does not respect this constraint, the baseline is moved to the next available visit.</p></li>
 <li><p><strong>relapse_to_event</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em>) – Minimum distance from a relapse (days) for an event to be considered as such.
 Can be a single value (minimum distance from <em>last</em> relapse) or array-like of length 2
 (minimum distance from <em>last</em> relapse, minimum distance from <em>next</em> relapse).
-Note that setting the distance to zero means retaining the event regardless of surrounding relapses.
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the minimum distance from last relapse
-# is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).</p></li>
+Note that setting the distance to zero means retaining the event regardless of surrounding relapses.</p></li>
 <li><p><strong>relapse_to_conf</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em>) – Minimum distance from a relapse (days) for a visit to be a valid confirmation visit.
 Can be a single value (minimum distance from <em>last</em> relapse) or array-like of length 2
 (minimum distance from <em>last</em> relapse, minimum distance from <em>next</em> relapse).
-Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the minimum distance from last relapse
-# is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).</p></li>
+Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.</p></li>
 <li><p><strong>relapse_assoc</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em>) – Maximum distance from a relapse (days) for a CDW event to be classified as RAW.
 Can be a single value (maximum distance from <em>last</em> relapse) or array-like of length 2
-(maximum distance from <em>last</em> relapse, maximum distance from <em>next</em> relapse).
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the maximum distance from last relapse
-# is overwritten by the relapse duration.</p></li>
+(maximum distance from <em>last</em> relapse, maximum distance from <em>next</em> relapse).</p></li>
 <li><p><strong>relapse_indep</strong> (<em>dict</em>) – <p>Specifies relapse-free intervals for PIRA definition. Must be given in the form:
 <code class="docutils literal notranslate"><span class="pre">{'prec':</span> <span class="pre">(p0,</span> <span class="pre">p1),</span> <span class="pre">'event':</span> <span class="pre">(e0,</span> <span class="pre">e1),</span> <span class="pre">'conf':</span> <span class="pre">(c0,</span> <span class="pre">c1)}</span></code>.
 The dictionary specifies the intervals around (any subset of) the three checkpoints:</p>
@@ -451,8 +443,7 @@ and same for the confirmation visit.</p></li>
 <p>If ‘prec_type’ is not in the dictionary keys, ‘prec’ is assumed to be the current baseline.</p>
 <p>If both ends of an interval are 0 (e.g., if both <code class="docutils literal notranslate"><span class="pre">p0=0</span></code> and <code class="docutils literal notranslate"><span class="pre">p1=0</span></code>), the checkpoint is ignored.
 If the right end is None, the interval is assumed to extend up to the left end of the next interval.
-If the left end is None, the interval is assumed to extend up to the right end of the previous interval.
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), it is possible to also define PIRA based on those…</p>
+If the left end is None, the interval is assumed to extend up to the right end of the previous interval.</p>
 </p></li>
 <li><p><strong>impute_last_visit</strong> (<em>float</em><em> or </em><em>int</em>) – Imputation probability for worsening events occurring at last visit (i.e. with no confirmation).
 Unconfirmed worsening events occurring at the last visit are never imputed if <code class="docutils literal notranslate"><span class="pre">impute_last_visit=0</span></code>;
@@ -464,7 +455,7 @@ If a value <code class="docutils literal notranslate"><span class="pre">N&gt;1</
 <ul>
 <li><p>’day’ if dates are given as “days from start” (the starting point can be different for each subject
 – e.g., days from randomisation in a clinical trial); negative values are accepted.</p></li>
-<li><p>Standard format for dates (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;\%d-\%m-\%Y&quot;</span></code>; see <code class="xref py py-func docutils literal notranslate"><span class="pre">strftime()</span></code> docs for correct syntax).</p></li>
+<li><p>Standard format for dates (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;%d-%m-%Y&quot;</span></code>; see <code class="xref py py-func docutils literal notranslate"><span class="pre">datetime.strftime()</span></code> docs for correct syntax).</p></li>
 </ul>
 <p>If not specified, function <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.to_datetime()</span></code> will try to infer it automatically.</p>
 </p></li>
@@ -479,15 +470,94 @@ with ‘time2event’ = total follow up.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">summary</span></code>: summary of detected events for each subject;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">results</span></code>: extended info on event sequence for each subject;</p></li>
-<li><p>(if <code class="docutils literal notranslate"><span class="pre">return_unconfirmed=True</span></code>) <code class="docutils literal notranslate"><span class="pre">unconfirmed</span></code>: unconfirmed changes.</p></li>
+<dd class="field-even"><p><ul>
+<li><p><strong>summary</strong> (<em>pandas.DataFrame</em>) – Event sequence and counts for each subject (one row per subject).
+It includes the following columns:</p>
+<dl class="simple">
+<dt>event_sequence<span class="classifier">str</span></dt><dd><p>Sequence of detected events (if any), in chronological order.</p>
+</dd>
+<dt>CDI<span class="classifier">int</span></dt><dd><p>Count of confirmed disability improvement (CDI) events.</p>
+</dd>
+<dt>CDW<span class="classifier">int</span></dt><dd><p>Count of confirmed disability worsening (CDW) events.</p>
+</dd>
+<dt>RAW<span class="classifier">int</span></dt><dd><p>Count of relapse-associated worsening (RAW) events.</p>
+</dd>
+<dt>PIRA<span class="classifier">int</span></dt><dd><p>Count of progression independent of relapse activity (PIRA) events.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Depending on computation settings, some columns may be absent
+(e.g., no <code class="docutils literal notranslate"><span class="pre">CDI</span></code> column if <code class="docutils literal notranslate"><span class="pre">event='firstCDW'</span></code>).</p>
+</li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Extended information on each detected event for all subjects,
+including the following columns:</p>
+<dl>
+<dt>&lt;subj_col&gt;<span class="classifier">str</span></dt><dd><p>Subject ID.</p>
+</dd>
+<dt>nevent<span class="classifier">int</span></dt><dd><p>Cumulative count of events for the subject.</p>
+</dd>
+<dt>event_type<span class="classifier">str</span></dt><dd><p>Type of event (e.g., CDI or CDW).</p>
+</dd>
+<dt>CDW_type<span class="classifier">str</span></dt><dd><p>Type of CDW (PIRA, RAW, undefined).</p>
+</dd>
+<dt>total_fu<span class="classifier">float</span></dt><dd><p>Total follow-up duration (days).</p>
+</dd>
+<dt>time2event<span class="classifier">float</span></dt><dd><p>Days from start of follow-up to event onset.</p>
+</dd>
+<dt>bl2event<span class="classifier">float</span></dt><dd><p>Days from baseline to event onset.</p>
+</dd>
+<dt>date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>Date of event onset.</p>
+</dd>
+<dt>value<span class="classifier">float</span></dt><dd><p>Outcome value at event onset.</p>
+</dd>
+<dt>bl_date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>Baseline date for the event.</p>
+</dd>
+<dt>bl_value<span class="classifier">float</span></dt><dd><p>Outcome value at baseline.</p>
+</dd>
+<dt>last_delta_date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>Date of last visit before event onset at a clinically meaningful score distance.</p>
+</dd>
+<dt>last_delta_value<span class="classifier">float</span></dt><dd><p>Outcome value at that visit.</p>
+</dd>
+<dt>conf&lt;conf_days&gt;_date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>Date of the <cite>&lt;conf_days&gt;</cite>-day confirmation visit.</p>
+</dd>
+<dt>conf&lt;conf_days&gt;_value<span class="classifier">float</span></dt><dd><p>Outcome value at the <cite>&lt;conf_days&gt;</cite>-day confirmation visit.</p>
+</dd>
+<dt>PIRA_conf&lt;conf_days&gt;_date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>For PIRA events, date of <cite>&lt;conf_days&gt;</cite>-day confirmation visit (may differ from CDW
+confirmation if the PIRA definition includes confirmation-related constraints on relapses).</p>
+</dd>
+<dt>PIRA_conf&lt;conf_days&gt;_value<span class="classifier">float</span></dt><dd><p>For PIRA events, outcome value at <cite>&lt;conf_days&gt;</cite>-day confirmation visit (may differ from CDW
+confirmation if the PIRA definition includes confirmation-related constraints on relapses).</p>
+</dd>
+<dt>sust_days<span class="classifier">float</span></dt><dd><p>Number of days the event was sustained.</p>
+</dd>
+<dt>sust_last<span class="classifier">bool</span></dt><dd><p>Whether the event was sustained until end of follow-up.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Some columns may be absent depending on computation settings
+(e.g., no date columns if <code class="docutils literal notranslate"><span class="pre">include_dates=False</span></code>).</p>
+</li>
+<li><p><strong>unconfirmed</strong> (<em>pandas.DataFrame</em>) – Info on unconfirmed outcome changes (only returned if <code class="docutils literal notranslate"><span class="pre">return_unconfirmed=True</span></code>),
+including the following columns:</p>
+<dl>
+<dt>&lt;subj_col&gt;<span class="classifier">str</span></dt><dd><p>Subject ID.</p>
+</dd>
+<dt>date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>Date of initial outcome change.</p>
+</dd>
+<dt>value<span class="classifier">float</span></dt><dd><p>Outcome value at initial outcome change.</p>
+</dd>
+<dt>bl_date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>Baseline date for the initial outcome change.</p>
+</dd>
+<dt>bl_value<span class="classifier">float</span></dt><dd><p>Outcome value at baseline.</p>
+</dd>
+<dt>closest_rel-<span class="classifier">float</span></dt><dd><p>Distance (in days) from the last relapse (if any).</p>
+</dd>
+<dt>closest_rel+<span class="classifier">float</span></dt><dd><p>Distance (in days) from the next relapse (if any).</p>
+</dd>
+</dl>
+</li>
 </ul>
 </p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>(pandas.DataFrame, pandas.DataFrame)</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -525,15 +595,15 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>baseline</strong> (<em>float</em>) – Baseline value.</p></li>
-<li><p><strong>outcome</strong> (<em>str</em>) – Type of test (‘edss’[default],’nhpt’,’t25fw’,’sdmt’)</p></li>
+<li><p><strong>outcome</strong> (<em>str</em>) – Type of test (‘edss’[default], ‘nhpt’, ‘t25fw’, or ‘sdmt’)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><p>Minimum clinically meaningful change from the provided baseline value. Specifically:</p>
 <ul class="simple">
-<li><p>EDSS: 1.5 if <cite>baseline`=0, 1 if 0&lt;`baseline`&lt;=5.0, 0.5 if `baseline</cite>&gt;5.0</p></li>
-<li><p>NHPT and T25FW: 20`%` of <cite>baseline</cite></p></li>
-<li><p>SDMT: either 3 points or 10`%` of <cite>baseline</cite>.</p></li>
+<li><p>EDSS: 1.5 if <code class="docutils literal notranslate"><span class="pre">baseline</span></code> = 0, 1 if 0 &lt; <code class="docutils literal notranslate"><span class="pre">baseline</span></code> &lt;= 5.0, 0.5 if <code class="docutils literal notranslate"><span class="pre">baseline</span></code> &gt; 5.0.</p></li>
+<li><p>NHPT and T25FW: 20% of <code class="docutils literal notranslate"><span class="pre">baseline</span></code>.</p></li>
+<li><p>SDMT: either 3 points or 10% of <code class="docutils literal notranslate"><span class="pre">baseline</span></code>.</p></li>
 </ul>
 </p>
 </dd>
@@ -553,7 +623,7 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 <li><p><strong>x</strong> (<em>float</em>) – New value.</p></li>
 <li><p><strong>baseline</strong> (<em>float</em>) – Baseline value.</p></li>
 <li><p><strong>type</strong> (<em>str</em>) – ‘wors’ or ‘impr’ or ‘change’.</p></li>
-<li><p><strong>outcome</strong> (<em>str</em>) – Outcome type (one of: ‘edss’,’nhpt’,’t25fw’,’sdmt’, ‘custom’).
+<li><p><strong>outcome</strong> (<em>str</em>) – Outcome type (one of: ‘edss’, ‘nhpt’, ‘t25fw’, ‘sdmt’, ‘custom’).
 Outcome type (if not ‘custom’) determines a default direction of worsening (see <code class="docutils literal notranslate"><span class="pre">worsening</span></code> argument)
 and default definition of clinically meaningful change given the reference value
 (using the built-in function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a>).</p></li>
@@ -591,27 +661,34 @@ Symbol Digit Modalities Test (SDMT) longidutinal scores, visit dates, and relaps
 in a small cohort of example patients to illustrate the use of the package.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A <code class="docutils literal notranslate"><span class="pre">visits</span></code> sheet containing disability info, and a <code class="docutils literal notranslate"><span class="pre">relapses</span></code> sheet containing
-relapse info.</p>
+<dd class="field-odd"><p><ul>
+<li><p><strong>visits</strong> (<em>pandas.DataFrame</em>) – Longitudinal disability info, including the following columns:</p>
+<dl class="simple">
+<dt>id: str</dt><dd><p>Subject identifier.</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>(pandas.DataFrame, pandas.DataFrame)</p>
+<dt>date: datetime-like</dt><dd><p>Visit date.</p>
+</dd>
+<dt>EDSS: float</dt><dd><p>EDSS score.</p>
+</dd>
+<dt>SDMT: float</dt><dd><p>SDMT score.</p>
+</dd>
+</dl>
+</li>
+<li><p><strong>relapses</strong> (<em>pandas.DataFrame</em>) – Relapse info, including the following columns:</p>
+<dl class="simple">
+<dt>id: str</dt><dd><p>Subject identifier.</p>
+</dd>
+<dt>date: datetime-like</dt><dd><p>Relapse date.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>The dataset is loaded from two .csv files (<code class="docutils literal notranslate"><span class="pre">MSprog_toydata_visits.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">MSprog_toydata_relapses.csv</span></code>) bundled with the package.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">_visits</span></code> file includes the following columns.</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">id</span></code>: subject identifier.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">date</span></code>: visit date.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">EDSS</span></code>: EDSS score.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">SDMT</span></code>: SDMT score.</p></li>
-</ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">_relapses</span></code> file includes the following columns.</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">id</span></code>: subject identifier.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">date</span></code>: relapse onset date.</p></li>
-</ul>
+<p>The dataset is loaded from two .csv files (<code class="docutils literal notranslate"><span class="pre">MSprog_toydata_visits.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">MSprog_toydata_relapses.csv</span></code>)
+bundled within the package.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">visits</span><span class="p">,</span> <span class="n">relapses</span> <span class="o">=</span> <span class="n">load_toy_data</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">visits</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
@@ -676,20 +753,14 @@ for the remainder of the follow-up period.</p></li>
 Can be a single value (minimum distance from <em>last</em> relapse) or array-like of length 2
 (minimum distance from <em>last</em> relapse, minimum distance from <em>next</em> relapse).
 Note that setting the distance to zero means keeping the baseline where it is regardless of surrounding relapses.
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the minimum distance from last relapse
-# is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
 If the designated baseline does not respect this constraint, the baseline is moved to the next available visit.</p></li>
 <li><p><strong>relapse_to_conf</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em>) – Minimum distance from a relapse (days) for a visit to be a valid confirmation visit.
 Can be a single value (minimum distance from <em>last</em> relapse) or array-like of length 2
 (minimum distance from <em>last</em> relapse, minimum distance from <em>next</em> relapse).
-Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the minimum distance from last relapse
-# is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).</p></li>
+Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.</p></li>
 <li><p><strong>relapse_assoc</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em>) – Maximum distance from a relapse (days) for a CDW event to be classified as RAW.
 Can be a single value (maximum distance from <em>last</em> relapse) or array-like of length 2
-(maximum distance from <em>last</em> relapse, maximum distance from <em>next</em> relapse).
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the maximum distance from last relapse
-# is overwritten by the relapse duration.</p></li>
+(maximum distance from <em>last</em> relapse, maximum distance from <em>next</em> relapse).</p></li>
 <li><p><strong>impute_last_visit</strong> (<em>float</em><em> or </em><em>int</em>) – Imputation probability for RAW events occurring at last visit (i.e. with no confirmation).
 Unconfirmed worsening events occurring at the last visit are never imputed if <code class="docutils literal notranslate"><span class="pre">impute_last_visit=0</span></code>;
 they are always imputed if <code class="docutils literal notranslate"><span class="pre">impute_last_visit=1</span></code>;
@@ -702,7 +773,7 @@ in score from baseline (simply obtained by subtracting the overall baseline from
 <ul>
 <li><p>’day’ if dates are given as “days from start” (the starting point can be different for each subject
 – e.g., days from randomisation in a clinical trial); negative values are accepted.</p></li>
-<li><p>Standard format for dates (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;\%d-\%m-\%Y&quot;</span></code>; see <code class="xref py py-func docutils literal notranslate"><span class="pre">strftime()</span></code> docs for correct syntax).</p></li>
+<li><p>Standard format for dates (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;%d-%m-%Y&quot;</span></code>; see <code class="xref py py-func docutils literal notranslate"><span class="pre">datetime.strftime()</span></code> docs for correct syntax).</p></li>
 </ul>
 <p>If not specified, function <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.to_datetime()</span></code> will try to infer it automatically.</p>
 </p></li>
@@ -716,20 +787,32 @@ for each subject.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><p>The original DataFrame (<code class="docutils literal notranslate"><span class="pre">data</span></code>) is returned with the addition of the following columns:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">f'ric_{value_col}'</span></code>: cumulative relapse-independent change from baseline</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">f'srac_{value_col}'</span></code>: cumulative sustained relapse-associated change from baseline</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">f'bumps_{value_col}'</span></code>: transient relapse-associated changes (bumps)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">f'bl_{value_col}'</span></code>: baseline score (if <code class="docutils literal notranslate"><span class="pre">include_bl=True</span></code>)</p></li>
-<li><p>’relapse_num’: cumulative relapse number (if <code class="docutils literal notranslate"><span class="pre">include_rel_num=True</span></code>)</p></li>
-</ul>
-<p>If <code class="docutils literal notranslate"><span class="pre">include_raw_dates=True</span></code>, an additional DataFrame containing the dates of detected
-RAW events for each subject is also returned.</p>
-</p>
+<dd class="field-even"><p><ul>
+<li><p><strong>data_sep</strong> (<em>pandas.DataFrame</em>) – The original DataFrame (<code class="docutils literal notranslate"><span class="pre">data</span></code>) with the addition of the following columns:</p>
+<dl class="simple">
+<dt>ric_&lt;value_col&gt;: float</dt><dd><p>Cumulative relapse-independent change from baseline.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pandas.DataFrame or (pandas.DataFrame, pandas.DataFrame)</p>
+<dt>srac_&lt;value_col&gt;: float</dt><dd><p>Cumulative sustained relapse-associated change.</p>
+</dd>
+<dt>trac_&lt;value_col&gt;: float</dt><dd><p>Transient relapse-associated changes (“bumps”).</p>
+</dd>
+<dt>bl_&lt;value_col&gt;: float</dt><dd><p>Baseline score (if <code class="docutils literal notranslate"><span class="pre">include_bl=True</span></code>).</p>
+</dd>
+<dt>relapse_num: int</dt><dd><p>Cumulative relapse number (if <code class="docutils literal notranslate"><span class="pre">include_rel_num=True</span></code>).</p>
+</dd>
+</dl>
+</li>
+<li><p><strong>raw_events</strong> (<em>pandas.DataFrame</em>) – Dates of detected RAW events for each subject (only returned if <code class="docutils literal notranslate"><span class="pre">include_raw_dates=True</span></code>),
+including columns:</p>
+<dl class="simple">
+<dt>&lt;subj_col&gt;: str</dt><dd><p>Subject ID.</p>
+</dd>
+<dt>&lt;date_col&gt;: datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code>.</dt><dd><p>Date of RAW event.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -811,15 +894,11 @@ If <code class="docutils literal notranslate"><span class="pre">require_sust_day
 <li><p><strong>relapse_to_event</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em>) – Minimum distance from a relapse (days) for an event to be considered as such.
 Can be a single value (minimum distance from <em>last</em> relapse) or array-like of length 2
 (minimum distance from <em>last</em> relapse, minimum distance from <em>next</em> relapse).
-Note that setting the distance to zero means retaining the event regardless of surrounding relapses.
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the minimum distance from last relapse
-# is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).</p></li>
+Note that setting the distance to zero means retaining the event regardless of surrounding relapses.</p></li>
 <li><p><strong>relapse_to_conf</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>array-like</em><em> of </em><em>length 1</em><em> or </em><em>2</em>) – Minimum distance from a relapse (days) for a visit to be a valid confirmation visit.
 Can be a single value (minimum distance from <em>last</em> relapse) or array-like of length 2
 (minimum distance from <em>last</em> relapse, minimum distance from <em>next</em> relapse).
-Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.
-# If relapse end dates are available (<code class="docutils literal notranslate"><span class="pre">renddate_col</span></code>), the minimum distance from last relapse
-# is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).</p></li>
+Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.</p></li>
 <li><p><strong>impute_last_visit</strong> (<em>float</em><em> or </em><em>int</em>) – Imputation probability for milestone reached at last visit (i.e. with no confirmation).
 If <code class="docutils literal notranslate"><span class="pre">impute_last_visit=0</span></code>, milestone is never imputed (i.e., considered reached) if the value is attained at the last visit;
 if <code class="docutils literal notranslate"><span class="pre">impute_last_visit=1</span></code>, it is always imputed; if <code class="docutils literal notranslate"><span class="pre">impute_last_visit=p</span></code>, <code class="docutils literal notranslate"><span class="pre">0&lt;p&lt;1</span></code>, it is imputed with probability <code class="docutils literal notranslate"><span class="pre">p</span></code>.
@@ -829,7 +908,7 @@ If a value <code class="docutils literal notranslate"><span class="pre">N&gt;1</
 <ul>
 <li><p>’day’ if dates are given as “days from start” (the starting point can be different for each subject
 – e.g., days from randomisation in a clinical trial); negative values are accepted.</p></li>
-<li><p>Standard format for dates (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;\%d-\%m-\%Y&quot;</span></code>; see <code class="xref py py-func docutils literal notranslate"><span class="pre">strftime()</span></code> docs for correct syntax).</p></li>
+<li><p>Standard format for dates (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;%d-%m-%Y&quot;</span></code>; see <code class="xref py py-func docutils literal notranslate"><span class="pre">datetime.strftime()</span></code> docs for correct syntax).</p></li>
 </ul>
 <p>If not specified, function <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.to_datetime()</span></code> will try to infer it automatically.</p>
 </p></li>
@@ -837,13 +916,17 @@ If a value <code class="docutils literal notranslate"><span class="pre">N&gt;1</
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><p>A data frame including columns:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">date_col</span></code> – date of first reaching or exceeding the milestone (or last date of follow-up if milestone is not reached);</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">value_col</span></code> – first value reaching or exceeding the milestone, if present;</p></li>
-<li><p>’time2event’ – the time taken to reach or exceed the milestone (or total follow-up length if milestone is not reached);</p></li>
-<li><p>’observed’ – whether the milestone was reached (1) or not (0).</p></li>
-</ul>
+<dd class="field-even"><p><p><strong>results</strong> – A DataFrame including the following columns:</p>
+<dl class="simple">
+<dt>&lt;date_col&gt;: datetime-like, or int if <code class="docutils literal notranslate"><span class="pre">date_format='day</span></code></dt><dd><p>Date of first reaching or exceeding the milestone (or last date of follow-up if milestone is not reached).</p>
+</dd>
+<dt>&lt;value_col&gt;: float</dt><dd><p>First value reaching or exceeding the milestone, if present.</p>
+</dd>
+<dt>time2event: int</dt><dd><p>The time taken to reach or exceed the milestone (or total follow-up length if milestone is not reached).</p>
+</dd>
+<dt>observed: bool</dt><dd><p>Whether the milestone was reached (True) or not (False).</p>
+</dd>
+</dl>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>

@@ -23,25 +23,34 @@ def load_toy_data():
 
     Returns
     -------
-    (pandas.DataFrame, pandas.DataFrame)
-        A ``visits`` sheet containing disability info, and a ``relapses`` sheet containing
-        relapse info.
+        visits: pandas.DataFrame
+            Longitudinal disability info, including the following columns:
+
+            id: str
+                Subject identifier.
+
+            date: datetime-like
+                Visit date.
+
+            EDSS: float
+                EDSS score.
+
+            SDMT: float
+                SDMT score.
+
+        relapses: pandas.DataFrame
+            Relapse info, including the following columns:
+
+            id: str
+                Subject identifier.
+
+            date: datetime-like
+                Relapse date.
 
     Notes
     -----
-    The dataset is loaded from two .csv files (``MSprog_toydata_visits.csv`` and ``MSprog_toydata_relapses.csv``) bundled with the package.
-
-    The ``_visits`` file includes the following columns.
-
-    - ``id``: subject identifier.
-    - ``date``: visit date.
-    - ``EDSS``: EDSS score.
-    - ``SDMT``: SDMT score.
-
-    The ``_relapses`` file includes the following columns.
-
-    - ``id``: subject identifier.
-    - ``date``: relapse onset date.
+    The dataset is loaded from two .csv files (``MSprog_toydata_visits.csv`` and ``MSprog_toydata_relapses.csv``)
+    bundled within the package.
 
     Examples
     --------
@@ -191,6 +200,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         - 'worsening': any confirmed sub-threshold worsening (i.e., any *confirmed* worsening in the
           outcome measure, possibly below clinically meaningful threshold) can potentially trigger a re-baseline;
         - 'none': only use clinically meaningful confirmed changes for rebaseline.
+
          See ``delta_fun`` argument and function :func:`compute_delta()` for more details.
 
     bl_geq: bool
@@ -254,8 +264,6 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         Can be a single value (minimum distance from *last* relapse) or array-like of length 2
         (minimum distance from *last* relapse, minimum distance from *next* relapse).
         Note that setting the distance to zero means keeping the baseline where it is regardless of surrounding relapses.
-        # If relapse end dates are available (``renddate_col``), the minimum distance from last relapse
-        # is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
         If the designated baseline does not respect this constraint, the baseline is moved to the next available visit.
 
     relapse_to_event: int, float, or array-like of length 1 or 2
@@ -263,23 +271,17 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         Can be a single value (minimum distance from *last* relapse) or array-like of length 2
         (minimum distance from *last* relapse, minimum distance from *next* relapse).
         Note that setting the distance to zero means retaining the event regardless of surrounding relapses.
-        # If relapse end dates are available (``renddate_col``), the minimum distance from last relapse
-        # is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
 
     relapse_to_conf: int, float, or array-like of length 1 or 2
         Minimum distance from a relapse (days) for a visit to be a valid confirmation visit.
         Can be a single value (minimum distance from *last* relapse) or array-like of length 2
         (minimum distance from *last* relapse, minimum distance from *next* relapse).
         Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.
-        # If relapse end dates are available (``renddate_col``), the minimum distance from last relapse
-        # is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
 
     relapse_assoc: int, float, or array-like of length 1 or 2
         Maximum distance from a relapse (days) for a CDW event to be classified as RAW.
         Can be a single value (maximum distance from *last* relapse) or array-like of length 2
         (maximum distance from *last* relapse, maximum distance from *next* relapse).
-        # If relapse end dates are available (``renddate_col``), the maximum distance from last relapse
-        # is overwritten by the relapse duration.
 
     relapse_indep: dict
         Specifies relapse-free intervals for PIRA definition. Must be given in the form:
@@ -305,7 +307,6 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         If both ends of an interval are 0 (e.g., if both ``p0=0`` and ``p1=0``), the checkpoint is ignored.
         If the right end is None, the interval is assumed to extend up to the left end of the next interval.
         If the left end is None, the interval is assumed to extend up to the right end of the previous interval.
-        # If relapse end dates are available (``renddate_col``), it is possible to also define PIRA based on those...
 
     impute_last_visit: float or int
         Imputation probability for worsening events occurring at last visit (i.e. with no confirmation).
@@ -320,7 +321,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
         - 'day' if dates are given as "days from start" (the starting point can be different for each subject
           -- e.g., days from randomisation in a clinical trial); negative values are accepted.
-        - Standard format for dates (e.g., ``"\%d-\%m-\%Y"``; see :func:`strftime()` docs for correct syntax).
+        - Standard format for dates (e.g., ``"%d-%m-%Y"``; see :func:`datetime.strftime()` docs for correct syntax).
 
         If not specified, function :func:`pandas.to_datetime()` will try to infer it automatically.
 
@@ -344,10 +345,94 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
     Returns
     -------
-    (pandas.DataFrame, pandas.DataFrame)
-         - ``summary``: summary of detected events for each subject;
-         - ``results``: extended info on event sequence for each subject;
-         - (if ``return_unconfirmed=True``) ``unconfirmed``: unconfirmed changes.
+    summary : pandas.DataFrame
+        Event sequence and counts for each subject (one row per subject).
+        It includes the following columns:
+
+        event_sequence : str
+            Sequence of detected events (if any), in chronological order.
+        CDI : int
+            Count of confirmed disability improvement (CDI) events.
+        CDW : int
+            Count of confirmed disability worsening (CDW) events.
+        RAW : int
+            Count of relapse-associated worsening (RAW) events.
+        PIRA : int
+            Count of progression independent of relapse activity (PIRA) events.
+
+        Notes
+        -----
+        Depending on computation settings, some columns may be absent
+        (e.g., no ``CDI`` column if ``event='firstCDW'``).
+
+    results : pandas.DataFrame
+        Extended information on each detected event for all subjects,
+        including the following columns:
+
+        <subj_col> : str
+            Subject ID.
+        nevent : int
+            Cumulative count of events for the subject.
+        event_type : str
+            Type of event (e.g., CDI or CDW).
+        CDW_type : str
+            Type of CDW (PIRA, RAW, undefined).
+        total_fu : float
+            Total follow-up duration (days).
+        time2event : float
+            Days from start of follow-up to event onset.
+        bl2event : float
+            Days from baseline to event onset.
+        date : datetime-like, or float if ``date_format='day'``
+            Date of event onset.
+        value : float
+            Outcome value at event onset.
+        bl_date : datetime-like, or float if ``date_format='day'``
+            Baseline date for the event.
+        bl_value : float
+            Outcome value at baseline.
+        last_delta_date : datetime-like, or float if ``date_format='day'``
+            Date of last visit before event onset at a clinically meaningful score distance.
+        last_delta_value : float
+            Outcome value at that visit.
+        conf<conf_days>_date : datetime-like, or float if ``date_format='day'``
+            Date of the `<conf_days>`-day confirmation visit.
+        conf<conf_days>_value : float
+            Outcome value at the `<conf_days>`-day confirmation visit.
+        PIRA_conf<conf_days>_date : datetime-like, or float if ``date_format='day'``
+            For PIRA events, date of `<conf_days>`-day confirmation visit (may differ from CDW
+            confirmation if the PIRA definition includes confirmation-related constraints on relapses).
+        PIRA_conf<conf_days>_value : float
+            For PIRA events, outcome value at `<conf_days>`-day confirmation visit (may differ from CDW
+            confirmation if the PIRA definition includes confirmation-related constraints on relapses).
+        sust_days : float
+            Number of days the event was sustained.
+        sust_last : bool
+            Whether the event was sustained until end of follow-up.
+
+        Notes
+        -----
+        Some columns may be absent depending on computation settings
+        (e.g., no date columns if ``include_dates=False``).
+
+    unconfirmed : pandas.DataFrame
+        Info on unconfirmed outcome changes (only returned if ``return_unconfirmed=True``),
+        including the following columns:
+
+        <subj_col> : str
+            Subject ID.
+        date : datetime-like, or float if ``date_format='day'``
+            Date of initial outcome change.
+        value : float
+            Outcome value at initial outcome change.
+        bl_date : datetime-like, or float if ``date_format='day'``
+            Baseline date for the initial outcome change.
+        bl_value : float
+            Outcome value at baseline.
+        closest_rel- : float
+            Distance (in days) from the last relapse (if any).
+        closest_rel+ : float
+            Distance (in days) from the next relapse (if any).
 
     Notes
     -----
@@ -561,7 +646,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     # Local function to display dates/days
     def display_date(day, start, to_print=False):
         if day is None:
-            return '' if to_print else (np.nan if date_format == 'day' else pd.NaT)
+            return '' if to_print else (float('nan') if date_format == 'day' else pd.NaT)
         elif date_format == 'day':
             return f'day {day:.0f}' if to_print else day
         else:
@@ -592,12 +677,12 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
     max_nevents = round(data.groupby(subj_col)[date_col].count().max()/2)
-    results = pd.DataFrame([['', '', np.nan if date_format == 'day' else pd.NaT, np.nan,
-                             np.nan if date_format == 'day' else pd.NaT, np.nan,
-                             0., np.nan, np.nan]
+    results = pd.DataFrame([['', '', float('nan') if date_format == 'day' else pd.NaT, float('nan'),
+                             float('nan') if date_format == 'day' else pd.NaT, float('nan'),
+                             float('nan'), float('nan'), float('nan')]
                             # + [0.]*len(conf_days)*2
-                            + [np.nan if date_format == 'day' else pd.NaT, np.nan]*len(conf_days)*2
-                            + [0.]*2]*nsub*max_nevents,
+                            + [float('nan') if date_format == 'day' else pd.NaT, float('nan')]*len(conf_days)*2
+                            + [0., False]]*nsub*max_nevents,
                columns=['event_type', 'CDW_type', 'bl_date', 'bl_value', 'date', 'value',
                         'total_fu', 'time2event', 'bl2event']
                        # + [f'conf{m}' for m in conf_days] + [f'PIRA_conf{m}' for m in conf_days]
@@ -679,7 +764,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         bl_idx, search_idx = 0, 1 # baseline index and index of where we are in the search
         proceed = 1
         conf_window = [(int(c) - conf_tol_days[c][0], int(c) + conf_tol_days[c][1]) for c in conf_days]
-        irel = 0 if nrel==0 else next((r for r in range(nrel) if relapse_dates[r] > data_id.loc[bl_idx, date_col]), None)
+        irel = 0 if nrel == 0 else next((r for r in range(nrel) if relapse_dates[r] > data_id.loc[bl_idx, date_col]), None)
         bl_last = None
 
         if verbose == 2:
@@ -850,16 +935,16 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                             if len(confirmed_at) == 0:
                                 del conf_t[m]
                                 conf_date[m].append(display_date(None, global_start))
-                                conf_value[m].append(np.nan)
+                                conf_value[m].append(float('nan'))
                             else:
                                 conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
                                 conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
                             # conf[m].append(1 if len(confirmed_at)>0 else 0)
                             # pira_conf[m].append(0)
                             pira_conf_date[m].append(display_date(None, global_start))
-                            pira_conf_value[m].append(np.nan)
+                            pira_conf_value[m].append(float('nan'))
                         sustd.append(data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
-                        sustl.append(int(sust_idx == nvisits-1)) #int(data_id.loc[nvisits-1,value_col] - bl[value_col] <= - delta(bl[value_col]))
+                        sustl.append(sust_idx == nvisits-1) #int(data_id.loc[nvisits-1,value_col] - bl[value_col] <= - delta(bl[value_col]))
 
                         # Print progress info
                         if verbose == 2:
@@ -1063,7 +1148,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                         if len(confirmed_at) == 0:
                                             del pconf_t[m]
                                             pira_conf_date[m].append(display_date(None, global_start))
-                                            pira_conf_value[m].append(np.nan)
+                                            pira_conf_value[m].append(float('nan'))
                                         else:
                                             pira_conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
                                             pira_conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
@@ -1087,7 +1172,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                 for m in conf_days:
                                     # pira_conf[m].append(0)
                                     pira_conf_date[m].append(display_date(None, global_start))
-                                    pira_conf_value[m].append(np.nan)
+                                    pira_conf_value[m].append(float('nan'))
 
                             bl_date.append(display_date(bl[date_col], global_start)) #_d_#
                             bl_value.append(bl[value_col])
@@ -1100,13 +1185,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                 if len(confirmed_at)==0:
                                     del conf_t[m]
                                     conf_date[m].append(display_date(None, global_start))
-                                    conf_value[m].append(np.nan)
+                                    conf_value[m].append(float('nan'))
                                 else:
                                     conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
                                     conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
                                 # conf[m].append(1 if len(confirmed_at) > 0 else 0)
                             sustd.append(data_id.loc[sust_idx, date_col] - data_id.loc[change_idx, date_col]) #.days #_d_#
-                            sustl.append(int(sust_idx == nvisits-1))
+                            sustl.append(sust_idx == nvisits-1)
 
                             # Print info
                             if verbose == 2:
@@ -1335,20 +1420,19 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
     if verbose >= 1:
         print(f'\n---\nOutcome: {outcome}\nConfirmation {"over" if check_intermediate else "at"}: '
-        + '; '.join([f'{c} (-{conf_tol_days[c][0]}, +{"inf" if conf_tol_days[c][1]==np.inf else str(conf_tol_days[c][1])}) days' for c in conf_days])
+        + '; '.join([f'{c} (-{conf_tol_days[c][0]}, +{"inf" if conf_tol_days[c][1] == float("inf") else str(conf_tol_days[c][1])}) days' for c in conf_days])
         + f'\nBaseline: {baseline}' + (f' (including sub-threshold {sub_threshold_rebl})' if baseline != 'fixed' and sub_threshold_rebl!="none" else '')
         + (' (and post-relapse re-baseline)' if relapse_rebl else '')
         + f'\nRelapse influence (baseline): {relapse_to_bl} days\nRelapse influence (event): {relapse_to_event} days'
         + f'\nRelapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {event}')
         print('---\nTotal subjects: %d\n---\nSubjects with CDW: %d (PIRA: %d; RAW: %d)'
-              %(nsub, (summary['CDW']>0).sum(),
-                (summary['PIRA']>0).sum(), (summary['RAW']>0).sum()))
+              %(nsub, (summary['CDW'] > 0).sum(),
+                (summary['PIRA'] > 0).sum(), (summary['RAW'] > 0).sum()))
         if event not in ('firstCDW', 'firstPIRA', 'firstRAW'):
-            print('Subjects with CDI: %d' %(summary['CDI']>0).sum())
+            print('Subjects with CDI: %d' %(summary['CDI'] > 0).sum())
         if event == 'multiple':
             print('---\nCDW events: %d (PIRA: %d; RAW: %d)'
-                  %(summary['CDW'].sum(),
-                    summary['PIRA'].sum(), summary['RAW'].sum()))
+                  %(summary['CDW'].sum(), summary['PIRA'].sum(), summary['RAW'].sum()))
             print('CDI events: %d' %(summary['CDI'].sum()))
 
     columns = results.columns
@@ -1401,16 +1485,16 @@ def compute_delta(baseline, outcome='edss'):
     baseline: float
         Baseline value.
     outcome: str
-        Type of test ('edss'[default],'nhpt','t25fw','sdmt')
+        Type of test ('edss'[default], 'nhpt', 't25fw', or 'sdmt')
 
     Returns
     -------
     float
         Minimum clinically meaningful change from the provided baseline value. Specifically:
 
-        - EDSS: 1.5 if `baseline`=0, 1 if 0<`baseline`<=5.0, 0.5 if `baseline`>5.0
-        - NHPT and T25FW: 20`%` of `baseline`
-        - SDMT: either 3 points or 10`%` of `baseline`.
+        - EDSS: 1.5 if ``baseline`` = 0, 1 if 0 < ``baseline`` <= 5.0, 0.5 if ``baseline`` > 5.0.
+        - NHPT and T25FW: 20% of ``baseline``.
+        - SDMT: either 3 points or 10% of ``baseline``.
 
     '''
     if outcome == 'edss':
@@ -1455,7 +1539,7 @@ def is_event(x, baseline, type, outcome, worsening=None,
      type: str
         'wors' or 'impr' or 'change'.
      outcome: str
-        Outcome type (one of: 'edss','nhpt','t25fw','sdmt', 'custom').
+        Outcome type (one of: 'edss', 'nhpt', 't25fw', 'sdmt', 'custom').
         Outcome type (if not 'custom') determines a default direction of worsening (see ``worsening`` argument)
         and default definition of clinically meaningful change given the reference value
         (using the built-in function :func:`compute_delta()`).
@@ -1598,16 +1682,12 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
         Can be a single value (minimum distance from *last* relapse) or array-like of length 2
         (minimum distance from *last* relapse, minimum distance from *next* relapse).
         Note that setting the distance to zero means retaining the event regardless of surrounding relapses.
-        # If relapse end dates are available (``renddate_col``), the minimum distance from last relapse
-        # is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
 
     relapse_to_conf: int, float, or array-like of length 1 or 2
         Minimum distance from a relapse (days) for a visit to be a valid confirmation visit.
         Can be a single value (minimum distance from *last* relapse) or array-like of length 2
         (minimum distance from *last* relapse, minimum distance from *next* relapse).
         Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.
-        # If relapse end dates are available (``renddate_col``), the minimum distance from last relapse
-        # is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
 
     impute_last_visit: float or int
         Imputation probability for milestone reached at last visit (i.e. with no confirmation).
@@ -1621,7 +1701,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
 
         - 'day' if dates are given as "days from start" (the starting point can be different for each subject
           -- e.g., days from randomisation in a clinical trial); negative values are accepted.
-        - Standard format for dates (e.g., ``"\%d-\%m-\%Y"``; see :func:`strftime()` docs for correct syntax).
+        - Standard format for dates (e.g., ``"%d-%m-%Y"``; see :func:`datetime.strftime()` docs for correct syntax).
 
         If not specified, function :func:`pandas.to_datetime()` will try to infer it automatically.
 
@@ -1630,13 +1710,20 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
 
     Returns
     -------
-    pandas.DataFrame
-        A data frame including columns:
+    results: pandas.DataFrame
+        A DataFrame including the following columns:
 
-        - ``date_col`` -- date of first reaching or exceeding the milestone (or last date of follow-up if milestone is not reached);
-        - ``value_col`` -- first value reaching or exceeding the milestone, if present;
-        - 'time2event' -- the time taken to reach or exceed the milestone (or total follow-up length if milestone is not reached);
-        - 'observed' -- whether the milestone was reached (1) or not (0).
+        <date_col>: datetime-like, or int if ``date_format='day``
+            Date of first reaching or exceeding the milestone (or last date of follow-up if milestone is not reached).
+
+        <value_col>: float
+            First value reaching or exceeding the milestone, if present.
+
+        time2event: int
+            The time taken to reach or exceed the milestone (or total follow-up length if milestone is not reached).
+
+        observed: bool
+            Whether the milestone was reached (True) or not (False).
 
     Notes
     -----
@@ -1765,7 +1852,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
     # Local function to display dates/days
     def display_date(day, start, to_print=False):
         if day is None:
-            return '' if to_print else (np.nan if date_format == 'day' else pd.NaT)
+            return '' if to_print else (float('nan') if date_format == 'day' else pd.NaT)
         elif date_format == 'day':
             return f'day {day:.0f}' if to_print else day
         else:
@@ -1775,7 +1862,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
 
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
-    results = pd.DataFrame([[np.nan if date_format == 'day' else pd.NaT, np.nan, np.nan, 0]]*nsub,
+    results = pd.DataFrame([[float('nan') if date_format == 'day' else pd.NaT, float('nan'), float('nan'), False]]*nsub,
                            columns=[date_col, value_col, 'time2event', 'observed'], index=all_subj)
 
     for subjid in all_subj:
@@ -1864,7 +1951,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                         results.at[subjid, date_col] = display_date(data_id.loc[milestone_idx, date_col], global_start) #_d_# #data_id.loc[milestone_idx,date_col]
                         results.at[subjid, value_col] = data_id.loc[milestone_idx, value_col]
                         results.at[subjid, 'time2event'] = data_id.loc[milestone_idx, date_col] - data_id.loc[0, date_col]
-                        results.at[subjid, 'observed'] = 1
+                        results.at[subjid, 'observed'] = True
                         proceed = 0
                         if verbose == 2:
                             print(f'{"Imputed" if milestone_idx == nvisits - 1 else "Confirmed"} value '
@@ -1874,8 +1961,8 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                         search_idx = next_nonsust + 1
                         if verbose == 2:
                             print(f'Value {">=" if worsening == "increase" else "<="} {milestone} confirmed '
-                            + f'but not sustained over {require_sust_days if require_sust_days < np.inf else ""}'
-                            + (' days' if require_sust_days < np.inf else 'the remainder of follow-up')
+                            + f'but not sustained over {require_sust_days if require_sust_days < float("inf") else ""}'
+                            + (' days' if require_sust_days < float('inf') else 'the remainder of follow-up')
                             + ': proceed with search')
 
                 else:
@@ -1887,7 +1974,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
 
     if verbose >= 1:
         print(f'''\n---\nOutcome: {outcome.upper()}\nConfirmation over: \
-{conf_days} days (-{conf_tol_days[0]} days, +{"inf" if conf_tol_days[1] == np.inf else str(conf_tol_days[1]) + " days"})
+{conf_days} days (-{conf_tol_days[0]} days, +{"inf" if conf_tol_days[1] == float('inf') else str(conf_tol_days[1]) + " days"})
 Relapse influence (event): {relapse_to_event} days
 Relapse influence (confirmation): {relapse_to_conf} days
         ''')
@@ -1988,8 +2075,6 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
         Can be a single value (minimum distance from *last* relapse) or array-like of length 2
         (minimum distance from *last* relapse, minimum distance from *next* relapse).
         Note that setting the distance to zero means keeping the baseline where it is regardless of surrounding relapses.
-        # If relapse end dates are available (``renddate_col``), the minimum distance from last relapse
-        # is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
         If the designated baseline does not respect this constraint, the baseline is moved to the next available visit.
 
     relapse_to_conf: int, float, or array-like of length 1 or 2
@@ -1997,15 +2082,11 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
         Can be a single value (minimum distance from *last* relapse) or array-like of length 2
         (minimum distance from *last* relapse, minimum distance from *next* relapse).
         Note that setting the distance to zero means using any visit for confirmation regardless of surrounding relapses.
-        # If relapse end dates are available (``renddate_col``), the minimum distance from last relapse
-        # is overwritten by the relapse duration, unless it was set to zero (in which case it stays 0).
 
     relapse_assoc: int, float, or array-like of length 1 or 2
         Maximum distance from a relapse (days) for a CDW event to be classified as RAW.
         Can be a single value (maximum distance from *last* relapse) or array-like of length 2
         (maximum distance from *last* relapse, maximum distance from *next* relapse).
-        # If relapse end dates are available (``renddate_col``), the maximum distance from last relapse
-        # is overwritten by the relapse duration.
 
     impute_last_visit: float or int
         Imputation probability for RAW events occurring at last visit (i.e. with no confirmation).
@@ -2024,7 +2105,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
         - 'day' if dates are given as "days from start" (the starting point can be different for each subject
           -- e.g., days from randomisation in a clinical trial); negative values are accepted.
-        - Standard format for dates (e.g., ``"\%d-\%m-\%Y"``; see :func:`strftime()` docs for correct syntax).
+        - Standard format for dates (e.g., ``"%d-%m-%Y"``; see :func:`datetime.strftime()` docs for correct syntax).
 
         If not specified, function :func:`pandas.to_datetime()` will try to infer it automatically.
 
@@ -2045,17 +2126,33 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
     Returns
     -------
-    pandas.DataFrame or (pandas.DataFrame, pandas.DataFrame)
-        The original DataFrame (``data``) is returned with the addition of the following columns:
+    data_sep: pandas.DataFrame
+        The original DataFrame (``data``) with the addition of the following columns:
 
-        - ``f'ric_{value_col}'``: cumulative relapse-independent change from baseline
-        - ``f'srac_{value_col}'``: cumulative sustained relapse-associated change from baseline
-        - ``f'bumps_{value_col}'``: transient relapse-associated changes (bumps)
-        - ``f'bl_{value_col}'``: baseline score (if ``include_bl=True``)
-        - 'relapse_num': cumulative relapse number (if ``include_rel_num=True``)
+        ric_<value_col>: float
+            Cumulative relapse-independent change from baseline.
 
-        If ``include_raw_dates=True``, an additional DataFrame containing the dates of detected
-        RAW events for each subject is also returned.
+        srac_<value_col>: float
+            Cumulative sustained relapse-associated change.
+
+        trac_<value_col>: float
+            Transient relapse-associated changes ("bumps").
+
+        bl_<value_col>: float
+            Baseline score (if ``include_bl=True``).
+
+        relapse_num: int
+            Cumulative relapse number (if ``include_rel_num=True``).
+
+    raw_events: pandas.DataFrame
+        Dates of detected RAW events for each subject (only returned if ``include_raw_dates=True``),
+        including columns:
+
+        <subj_col>: str
+            Subject ID.
+
+        <date_col>: datetime-like, or float if ``date_format='day'``.
+            Date of RAW event.
 
     Notes
     -----
@@ -2205,13 +2302,13 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
     # Local function to display dates/days
     def display_date(day, start, to_print=False):
         if day is None:
-            return '' if to_print else (np.nan if date_format == 'day' else pd.NaT)
+            return '' if to_print else (float('nan') if date_format == 'day' else pd.NaT)
         elif date_format == 'day':
             return f'day {day:.0f}' if to_print else day
         else:
             return (start.date() if to_print else start) + datetime.timedelta(days=day.item())
 
-    ri_col, ra_col, bump_col = 'ric_' + value_col, 'rac_' + value_col, 'bumps_' + value_col
+    ri_col, ra_col, bump_col = 'ric_' + value_col, 'srac_' + value_col, 'trac_' + value_col
     data_sep[ra_col] = 0.
     data_sep[bump_col] = 0.
     data_sep[ri_col] = data_sep[value_col]
@@ -2306,8 +2403,8 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
         distp[distp.isna()] = float('inf')
         relapse_id['closest_vis-'] = distm.idxmin(axis=1)  #None if all(distm.isna()) else distm.idxmin(axis=1)
         relapse_id['closest_vis+'] = distp.idxmin(axis=1)  #None if all(distp.isna()) else distp.idxmin(axis=1)
-        relapse_id.loc[distm.min(axis=1)==np.inf, 'closest_vis-'] = np.nan
-        relapse_id.loc[distp.min(axis=1)==np.inf, 'closest_vis+'] = np.nan
+        relapse_id.loc[distm.min(axis=1) == float('inf'), 'closest_vis-'] = float('nan')
+        relapse_id.loc[distp.min(axis=1) == float('inf'), 'closest_vis+'] = float('nan')
         ##########
 
         delta_raw, raw_dates = [], []
