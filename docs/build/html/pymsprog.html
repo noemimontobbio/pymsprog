@@ -263,11 +263,11 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="pymsprog.MSprog">
 <span class="sig-prename descclassname"><span class="pre">pymsprog.</span></span><span class="sig-name descname"><span class="pre">MSprog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subj_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsubj_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdate_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subjects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worsening</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valuedelta_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'firstCDW'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fixed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proceed_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'firstconf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_threshold_rebl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bl_geq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_rebl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_local_extrema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validconf_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_tol_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[7,</span> <span class="pre">730.5]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">require_sust_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_intermediate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_bl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_assoc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">90</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_indep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">impute_last_visit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_stable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_unconfirmed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pymsprog.MSprog" title="Link to this definition">¶</a></dt>
-<dd><p>Assess multiple sclerosis disability course from longitudinal data.</p>
-<p>The function detects and characterises the confirmed disability worsening (CDW)
+<dd><p>The function detects and characterises the confirmed disability worsening (CDW)
 or improvement (CDI) events of an outcome measure (EDSS, NHPT, T25FW, or SDMT; or any custom outcome)
 for one or more subjects, based on repeated assessments
 through time (and on the dates of acute episodes, if any).
+The events are detected sequentially by scanning the outcome values in chronological order.
 Several qualitative and quantitative options are given as arguments that can be set
 by the user and reported as a complement to the results to ensure reproducibility.</p>
 <dl class="field-list simple">
@@ -319,8 +319,8 @@ In such a case, <a class="reference internal" href="#pymsprog.MSprog" title="pym
 <li><p>’firstCDW’ (first CDW, default)</p></li>
 <li><p>’firstCDI’ (first CDI)</p></li>
 <li><p>’first’ (only the very first confirmed event – CDI or CDW)</p></li>
-<li><p>’firstPIRA’ (first PIRA);</p></li>
-<li><p>’firstRAW’ (first RAW);</p></li>
+<li><p>’firstPIRA’ (first PIRA)</p></li>
+<li><p>’firstRAW’ (first RAW)</p></li>
 <li><p>’multiple’ (all confirmed events in chronological order).</p></li>
 </ul>
 </p></li>
@@ -360,9 +360,7 @@ in the outcome measure, possibly below clinically meaningful threshold) can pote
 outcome measure, possibly below clinically meaningful threshold) can potentially trigger a re-baseline;</p></li>
 <li><p>’none’: only use clinically meaningful confirmed changes for rebaseline.</p></li>
 </ul>
-<blockquote>
-<div><p>See <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> argument and function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a> for more details.</p>
-</div></blockquote>
+<p>See <code class="docutils literal notranslate"><span class="pre">delta_fun</span></code> argument and function <a class="reference internal" href="#pymsprog.compute_delta" title="pymsprog.compute_delta"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_delta()</span></code></a> for more details.</p>
 </p></li>
 <li><p><strong>bl_geq</strong> (<em>bool</em>) – This argument is only used if the baseline is moved.
 If True, the new reference value must always be greater or equal than the previous one;
@@ -546,30 +544,23 @@ including the following columns:</p>
 </dd>
 <dt>value<span class="classifier">float</span></dt><dd><p>Outcome value at initial outcome change.</p>
 </dd>
-<dt>bl_date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>Baseline date for the initial outcome change.</p>
+<dt>bl_date<span class="classifier">datetime-like, or float if <code class="docutils literal notranslate"><span class="pre">date_format='day'</span></code></span></dt><dd><p>Date of baseline.</p>
 </dd>
 <dt>bl_value<span class="classifier">float</span></dt><dd><p>Outcome value at baseline.</p>
 </dd>
-<dt>closest_rel-<span class="classifier">float</span></dt><dd><p>Distance (in days) from the last relapse (if any).</p>
+<dt>closest_rel-<span class="classifier">float</span></dt><dd><p>Distance in days from the last relapse before the outcome change (if any).</p>
 </dd>
-<dt>closest_rel+<span class="classifier">float</span></dt><dd><p>Distance (in days) from the next relapse (if any).</p>
+<dt>closest_rel+<span class="classifier">float</span></dt><dd><p>Distance in days from the next relapse after the outcome change (if any).</p>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>In first-event scenarios (e.g., <code class="docutils literal notranslate"><span class="pre">event='firstCDW'</span></code>), the event search stops as soon as
+the first confirmed event is found – in this case, the <code class="docutils literal notranslate"><span class="pre">unconfirmed</span></code> data frame only reports
+unconfirmed outcome changes occurring <em>before</em> detecting a confirmed event.</p>
 </li>
 </ul>
 </p>
 </dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>The events are detected sequentially by scanning the outcome values in chronological order.
-Time windows for confirmation visits are determined by arguments
-<code class="docutils literal notranslate"><span class="pre">conf_days</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days</span></code>, <code class="docutils literal notranslate"><span class="pre">relapse_to_conf</span></code>.
-CDW events are classified as relapse-associated or relapse-independent based on their relative timing
-with respect to the relapses. Specifically, relapse-associated worsening (RAW) events are defined as
-CDW events occurring within a specified interval (<code class="docutils literal notranslate"><span class="pre">relapse_assoc</span></code> argument) from a relapse;
-the definition of progression independent of relapse activity (PIRA) is established
-by specifying relapse-free intervals (<code class="docutils literal notranslate"><span class="pre">relapse_indep</span></code> argument).</p>
-<dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>ValueError</strong> – If the arguments are incorrectly specified.</p>
 </dd>
@@ -589,8 +580,6 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 <span class="sig-prename descclassname"><span class="pre">pymsprog.</span></span><span class="sig-name descname"><span class="pre">compute_delta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baseline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'edss'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pymsprog.compute_delta" title="Link to this definition">¶</a></dt>
 <dd><p>Definition of default minimum clinically meaningful shift for different scales
 (EDSS, NHPT, T25FW, or SDMT).</p>
-<p>Note: default thresholds are meant to apply to all versions of each test
-(e.g., dominant or non-dominant hand for NHPT, best time or median of two trials, etc.).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -611,6 +600,9 @@ by specifying relapse-free intervals (<code class="docutils literal notranslate"
 <dd class="field-odd"><p>float</p>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>Default thresholds are meant to apply to all versions of each test
+(e.g., dominant or non-dominant hand for NHPT, best time or median of two trials, etc.).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -702,7 +694,9 @@ bundled within the package.</p>
 <span class="sig-prename descclassname"><span class="pre">pymsprog.</span></span><span class="sig-name descname"><span class="pre">separate_ri_ra</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subj_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsubj_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdate_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worsening</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validconf_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_tol_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[7,</span> <span class="pre">730.5]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sust_raw_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">180</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_bl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_assoc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">90</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">impute_last_visit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtract_bl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_rel_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_bl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_raw_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pymsprog.separate_ri_ra" title="Link to this definition">¶</a></dt>
 <dd><p>Given longitudinal disability assessments and relapse dates, decompose
 the disability trajectory into a relapse-associated component (RAC)
-and a relapse-independent component (RIC).</p>
+and a relapse-independent component (RIC).
+The RAC is split into a “sustained” component and a “transient” component
+(see below).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -830,10 +824,10 @@ the current assessment. If a RAW event is transient (not sustained), the change 
 subtracted from all scores up to the confirmation visit.
 Three sub-trajectories are obtained:</p>
 <ul class="simple">
-<li><p>RAC (permanent accumulation of disability from sustained RAW);</p></li>
-<li><p>“bumps” (temporary disability worsening from transient RAW);</p></li>
-<li><p>RIC (disability accumulation due to PIRA, obtained as the trajectory of disability worsening
-deprived of all sustained and transient relapse-associated contributions).</p></li>
+<li><p>SRAC (“sustained RAC”): permanent accumulation of disability from sustained RAW.</p></li>
+<li><p>TRAC (“transient RAC”): temporary disability worsening from transient RAW (“bumps”).</p></li>
+<li><p>RIC: disability accumulation due to PIRA, obtained as the trajectory of disability worsening
+deprived of all sustained and transient relapse-associated contributions.</p></li>
 </ul>
 <p>All sub-trajectories are expressed as deltas relative to the baseline value,
 as the disability already accumulated at the beginning of the follow-up period
@@ -849,11 +843,9 @@ with the available data.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="pymsprog.value_milestone">
 <span class="sig-prename descclassname"><span class="pre">pymsprog.</span></span><span class="sig-name descname"><span class="pre">value_milestone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">milestone</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subj_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsubj_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdate_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worsening</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validconf_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_tol_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[7,</span> <span class="pre">730.5]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">require_sust_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relapse_to_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">impute_last_visit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pymsprog.value_milestone" title="Link to this definition">¶</a></dt>
-<dd><p>Time to disability milestone.</p>
-<p>The function scans the visits in chronological order to detect the first
-outcome value reaching or exceeding a specified disability milestone (e.g., EDSS&gt;=6), <em>with confirmation</em>.
-Note: “exceeding” means either value&gt;milestone or value&lt;milestone, depending on the
-outcome measure (see arguments <code class="docutils literal notranslate"><span class="pre">outcome</span></code> and <code class="docutils literal notranslate"><span class="pre">worsening</span></code>).</p>
+<dd><p>The function scans the visits in chronological order to detect the first
+outcome value reaching or exceeding a specified disability milestone
+(e.g., EDSS&gt;=6), <em>with confirmation</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -934,10 +926,12 @@ If a value <code class="docutils literal notranslate"><span class="pre">N&gt;1</
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>An event is only retained if <strong>confirmed</strong>, i.e., if all values <em>up to</em> the
-confirmation visit reach or exceed the milestone.
-Time windows for confirmation visits are determined by arguments
-<code class="docutils literal notranslate"><span class="pre">conf_days</span></code>, <code class="docutils literal notranslate"><span class="pre">conf_tol_days</span></code>, <code class="docutils literal notranslate"><span class="pre">relapse_to_conf</span></code>.</p>
+<ul class="simple">
+<li><p>“Reaching or exceeding” the milestone means either value &lt;= milestone or value &gt;= milestone,
+depending on the outcome measure (see arguments <code class="docutils literal notranslate"><span class="pre">outcome</span></code> and <code class="docutils literal notranslate"><span class="pre">worsening</span></code>).</p></li>
+<li><p>An event is only retained if <strong>confirmed</strong>, i.e., if all values <em>up to</em> the
+confirmation visit reach or exceed the milestone.</p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>ValueError</strong> – If the arguments are incorrectly specified.</p>

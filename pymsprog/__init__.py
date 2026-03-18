@@ -80,12 +80,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
            return_unconfirmed=False, verbose=1):
     '''
 
-    Assess multiple sclerosis disability course from longitudinal data.
-
     The function detects and characterises the confirmed disability worsening (CDW)
     or improvement (CDI) events of an outcome measure (EDSS, NHPT, T25FW, or SDMT; or any custom outcome)
     for one or more subjects, based on repeated assessments
     through time (and on the dates of acute episodes, if any).
+    The events are detected sequentially by scanning the outcome values in chronological order.
     Several qualitative and quantitative options are given as arguments that can be set
     by the user and reported as a complement to the results to ensure reproducibility.
 
@@ -160,8 +159,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         - 'firstCDW' (first CDW, default)
         - 'firstCDI' (first CDI)
         - 'first' (only the very first confirmed event -- CDI or CDW)
-        - 'firstPIRA' (first PIRA);
-        - 'firstRAW' (first RAW);
+        - 'firstPIRA' (first PIRA)
+        - 'firstRAW' (first RAW)
         - 'multiple' (all confirmed events in chronological order).
 
     baseline: str
@@ -201,7 +200,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
           outcome measure, possibly below clinically meaningful threshold) can potentially trigger a re-baseline;
         - 'none': only use clinically meaningful confirmed changes for rebaseline.
 
-         See ``delta_fun`` argument and function :func:`compute_delta()` for more details.
+        See ``delta_fun`` argument and function :func:`compute_delta()` for more details.
 
     bl_geq: bool
         This argument is only used if the baseline is moved.
@@ -426,24 +425,19 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         value : float
             Outcome value at initial outcome change.
         bl_date : datetime-like, or float if ``date_format='day'``
-            Baseline date for the initial outcome change.
+            Date of baseline.
         bl_value : float
             Outcome value at baseline.
         closest_rel- : float
-            Distance (in days) from the last relapse (if any).
+            Distance in days from the last relapse before the outcome change (if any).
         closest_rel+ : float
-            Distance (in days) from the next relapse (if any).
+            Distance in days from the next relapse after the outcome change (if any).
 
-    Notes
-    -----
-    The events are detected sequentially by scanning the outcome values in chronological order.
-    Time windows for confirmation visits are determined by arguments
-    ``conf_days``, ``conf_tol_days``, ``relapse_to_conf``.
-    CDW events are classified as relapse-associated or relapse-independent based on their relative timing
-    with respect to the relapses. Specifically, relapse-associated worsening (RAW) events are defined as
-    CDW events occurring within a specified interval (``relapse_assoc`` argument) from a relapse;
-    the definition of progression independent of relapse activity (PIRA) is established
-    by specifying relapse-free intervals (``relapse_indep`` argument).
+        Notes
+        -----
+        In first-event scenarios (e.g., ``event='firstCDW'``), the event search stops as soon as
+        the first confirmed event is found -- in this case, the ``unconfirmed`` data frame only reports
+        unconfirmed outcome changes occurring *before* detecting a confirmed event.
 
     Raises
     ------
@@ -1477,9 +1471,6 @@ def compute_delta(baseline, outcome='edss'):
     Definition of default minimum clinically meaningful shift for different scales
     (EDSS, NHPT, T25FW, or SDMT).
 
-    Note: default thresholds are meant to apply to all versions of each test
-    (e.g., dominant or non-dominant hand for NHPT, best time or median of two trials, etc.).
-
     Parameters
     ----------
     baseline: float
@@ -1495,6 +1486,11 @@ def compute_delta(baseline, outcome='edss'):
         - EDSS: 1.5 if ``baseline`` = 0, 1 if 0 < ``baseline`` <= 5.0, 0.5 if ``baseline`` > 5.0.
         - NHPT and T25FW: 20% of ``baseline``.
         - SDMT: either 3 points or 10% of ``baseline``.
+
+    Notes
+    -----
+    Default thresholds are meant to apply to all versions of each test
+    (e.g., dominant or non-dominant hand for NHPT, best time or median of two trials, etc.).
 
     '''
     if outcome == 'edss':
@@ -1607,12 +1603,9 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                     verbose=0):
     '''
 
-    Time to disability milestone.
-
     The function scans the visits in chronological order to detect the first
-    outcome value reaching or exceeding a specified disability milestone (e.g., EDSS>=6), *with confirmation*.
-    Note: "exceeding" means either value>milestone or value<milestone, depending on the
-    outcome measure (see arguments ``outcome`` and ``worsening``).
+    outcome value reaching or exceeding a specified disability milestone
+    (e.g., EDSS>=6), *with confirmation*.
 
     Parameters
     ----------
@@ -1727,10 +1720,11 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
 
     Notes
     -----
-    An event is only retained if **confirmed**, i.e., if all values *up to* the
-    confirmation visit reach or exceed the milestone.
-    Time windows for confirmation visits are determined by arguments
-    ``conf_days``, ``conf_tol_days``, ``relapse_to_conf``.
+
+    - "Reaching or exceeding" the milestone means either value <= milestone or value >= milestone,
+      depending on the outcome measure (see arguments ``outcome`` and ``worsening``).
+    - An event is only retained if **confirmed**, i.e., if all values *up to* the
+      confirmation visit reach or exceed the milestone.
 
     Raises
     ------
@@ -1997,6 +1991,8 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
     Given longitudinal disability assessments and relapse dates, decompose
     the disability trajectory into a relapse-associated component (RAC)
     and a relapse-independent component (RIC).
+    The RAC is split into a "sustained" component and a "transient" component
+    (see below).
 
     Parameters
     ----------
@@ -2171,10 +2167,10 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
     subtracted from all scores up to the confirmation visit.
     Three sub-trajectories are obtained:
 
-    - RAC (permanent accumulation of disability from sustained RAW);
-    - "bumps" (temporary disability worsening from transient RAW);
-    - RIC (disability accumulation due to PIRA, obtained as the trajectory of disability worsening
-      deprived of all sustained and transient relapse-associated contributions).
+    - SRAC ("sustained RAC"): permanent accumulation of disability from sustained RAW.
+    - TRAC ("transient RAC"): temporary disability worsening from transient RAW ("bumps").
+    - RIC: disability accumulation due to PIRA, obtained as the trajectory of disability worsening
+      deprived of all sustained and transient relapse-associated contributions.
 
     All sub-trajectories are expressed as deltas relative to the baseline value,
     as the disability already accumulated at the beginning of the follow-up period
