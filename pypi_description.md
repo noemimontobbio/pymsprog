@@ -154,7 +154,7 @@ where: `nevent` is the cumulative event count for each subject; `event_type` and
 `sust_days` is the number of days for which the event was sustained; 
 `sust_last` reports whether the event was sustained until the last visit.
 
-2A summary table providing the event count for each subject and event type:
+2. A summary table providing the event count for each subject and event type:
 ```python
 print(summary)
 '''
