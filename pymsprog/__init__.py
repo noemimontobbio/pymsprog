@@ -1,5 +1,5 @@
 
-__version__ = "1.0.5"
+__version__ = "1.0.6"
 
 import copy
 import datetime
@@ -638,13 +638,22 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         global_start = None
 
     # Local function to display dates/days
-    def display_date(day, start, to_print=False):
+    def display_date(day, start):
         if day is None:
-            return '' if to_print else (float('nan') if date_format == 'day' else pd.NaT)
-        elif date_format == 'day':
-            return f'day {day:.0f}' if to_print else day
-        else:
-            return (start.date() if to_print else start) + datetime.timedelta(days=day.item())
+            return ''
+        if date_format == 'day':
+            return f'day {day:.0f}'
+        return start.date() + datetime.timedelta(days=day.item())
+
+    # Local function to re-convert numeric to date (vectorised)
+    def num_to_date(day, start):
+        if date_format == "day":
+            return day
+        day = np.asarray(day, dtype=float)
+        out = np.full(day.shape, np.datetime64("NaT"), dtype="datetime64[ns]")
+        ok = ~np.isnan(day)
+        out[ok] = start + pd.to_timedelta(day[ok], unit="D")
+        return out
 
     # Restrict to subset of subjects
     if subjects is not None:
@@ -670,23 +679,25 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
     all_subj = data[subj_col].unique()
     nsub = len(all_subj)
-    max_nevents = round(data.groupby(subj_col)[date_col].count().max()/2)
-    results = pd.DataFrame([['', '', float('nan') if date_format == 'day' else pd.NaT, float('nan'),
-                             float('nan') if date_format == 'day' else pd.NaT, float('nan'),
-                             float('nan'), float('nan'), float('nan')]
-                            # + [0.]*len(conf_days)*2
-                            + [float('nan') if date_format == 'day' else pd.NaT, float('nan')]*len(conf_days)*2
-                            + [0., False]]*nsub*max_nevents,
-               columns=['event_type', 'CDW_type', 'bl_date', 'bl_value', 'date', 'value',
-                        'total_fu', 'time2event', 'bl2event']
-                       # + [f'conf{m}' for m in conf_days] + [f'PIRA_conf{m}' for m in conf_days]
-                       + [f'conf{m}_date' for m in conf_days] + [f'conf{m}_value' for m in conf_days]
-                       + [f'PIRA_conf{m}_date' for m in conf_days] + [f'PIRA_conf{m}_value' for m in conf_days]
-                       + ['sust_days', 'sust_last'])
-    results.insert(loc=0, column=subj_col, value=np.repeat(all_subj, max_nevents))
-    results.insert(loc=1, column='nevent', value=np.tile(np.arange(1, max_nevents + 1), nsub))
-    # results[subj_col] = np.repeat(all_subj, max_nevents)
-    # results['nevent'] = np.tile(np.arange(1, max_nevents + 1), nsub)
+    ##########_ev_
+    subject_results = []
+    ##########_ev_
+    # max_nevents = round(data.groupby(subj_col)[date_col].count().max()/2)
+    # results = pd.DataFrame([['', '', float('nan') if date_format == 'day' else pd.NaT, float('nan'),
+    #                          float('nan') if date_format == 'day' else pd.NaT, float('nan'),
+    #                          float('nan'), float('nan'), float('nan')]
+    #                         # + [0.]*len(conf_days)*2
+    #                         + [float('nan') if date_format == 'day' else pd.NaT, float('nan')]*len(conf_days)*2
+    #                         + [0., False]]*nsub*max_nevents,
+    #            columns=['event_type', 'CDW_type', 'bl_date', 'bl_value', 'date', 'value',
+    #                     'total_fu', 'time2event', 'bl2event']
+    #                    # + [f'conf{m}' for m in conf_days] + [f'PIRA_conf{m}' for m in conf_days]
+    #                    + [f'conf{m}_date' for m in conf_days] + [f'conf{m}_value' for m in conf_days]
+    #                    + [f'PIRA_conf{m}_date' for m in conf_days] + [f'PIRA_conf{m}_value' for m in conf_days]
+    #                    + ['sust_days', 'sust_last'])
+    # results.insert(loc=0, column=subj_col, value=np.repeat(all_subj, max_nevents))
+    # results.insert(loc=1, column='nevent', value=np.tile(np.arange(1, max_nevents + 1), nsub))
+    ##########_ev_
 
     summary = pd.DataFrame([[''] + [0]*4]*nsub,
                            columns=['event_sequence', 'CDI', 'CDW', 'RAW', 'PIRA'],
@@ -730,30 +741,38 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
 
         total_fu[subjid] = data_id.loc[nvisits-1,date_col] - data_id.loc[0,date_col]
 
-        #_d_#
-        # all_dates, sorted_ind = np.unique(list(data_id[date_col]) + list(relapse_dates), #np.concatenate([data_id[date_col].values, relapse_dates]),
-        #                       return_index=True) # numpy unique() returns sorted values
-        # is_rel = [x in relapse_dates for x in all_dates] # whether a date corresponds to a relapse
-        # # If there is a relapse with no visit, readjust the indices:
-        # date_dict = {sorted_ind[i] : i for i in range(len(sorted_ind))}
+        # Visit distance from closest previous/next relapse
+        visits = data_id[date_col].to_numpy()
+        rels = np.asarray(relapse_dates)
+        if rels.size > 0:
+            # Relapse - visit
+            dist = (rels[None, :] - visits[:, None]).astype(float)  # to allow inf
+            # Distance to closest previous relapse
+            distm = -dist.copy()
+            distm[distm < 0] = np.inf
+            closest_rel_before = distm.min(axis=1)
+            # Distance to closest next relapse
+            distp = dist.copy()
+            distp[distp < 0] = np.inf
+            closest_rel_after = distp.min(axis=1)
+        else:
+            closest_rel_before = np.full(len(visits), np.inf)
+            closest_rel_after = np.full(len(visits), np.inf)
+        data_id['closest_rel-'] = closest_rel_before
+        data_id['closest_rel+'] = closest_rel_after
 
-        relapse_df = pd.DataFrame([relapse_dates]*len(data_id))
-        relapse_df['visit'] = data_id[date_col].values
-        dist = relapse_df.drop(['visit'],axis=1).subtract(relapse_df['visit'], axis=0) #_d_# #.apply(lambda x : pd.to_timedelta(x).dt.days)
-        distm = - dist.mask(dist>0)  # other=-float('inf')
-        distp = dist.mask(dist<0)  # other=float('inf')
-        distm[distm.isna()] = float('inf')
-        distp[distp.isna()] = float('inf')
-        data_id['closest_rel-'] = float('inf') if all(distm.isna()) else distm.min(axis=1)
-        data_id['closest_rel+'] = float('inf') if all(distp.isna()) else distp.min(axis=1)
-
-        event_type, event_index = [''], []
-        bl_date, bl_value, edate, evalue, time2event, bl2event = [], [], [], [], [], []
-        # conf, pira_conf = {m: [] for m in conf_days}, {m: [] for m in conf_days}
-        conf_date, conf_value = {m: [] for m in conf_days}, {m: [] for m in conf_days}
-        pira_conf_date, pira_conf_value = {m: [] for m in conf_days}, {m: [] for m in conf_days}
-        sustd, sustl = [], []
-
+        ##########_ev_
+        events = []
+        event_type, event_index = [], []
+        ##########_ev_
+        # # Initialise results columns
+        # event_type, event_index = [''], []
+        # bl_date, bl_value, edate, evalue, time2event, bl2event = [], [], [], [], [], []
+        # # conf, pira_conf = {m: [] for m in conf_days}, {m: [] for m in conf_days}
+        # conf_date, conf_value = {m: [] for m in conf_days}, {m: [] for m in conf_days}
+        # pira_conf_date, pira_conf_value = {m: [] for m in conf_days}, {m: [] for m in conf_days}
+        # sustd, sustl = [], []
+        ##########_ev_
 
         bl_idx, search_idx = 0, 1 # baseline index and index of where we are in the search
         proceed = 1
@@ -767,13 +786,37 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         while proceed:
 
             # Set baseline (skip if local extremum or within relapse influence)
-            local_extr = True  # to enter the loop
+            # Check if baseline is local extremum:
+            if skip_local_extrema != 'none':
+                prec = data_id.loc[bl_idx, :] if bl_idx == 0 else data_id.loc[bl_idx - 1, :]
+                prec2value = -1 if bl_idx <= 1 else data_id.loc[bl_idx - 2, value_col]
+                subs = data_id.loc[bl_idx, :] if bl_idx == nvisits - 1 else data_id.loc[bl_idx + 1, :]
+                vis = data_id.loc[bl_idx, :]
+                local_extr = ((isevent_loc(prec[value_col], vis[value_col], type='wors',
+                                                  st=skip_local_extrema == 'all',
+                                                  baseline_delta=vis[valuedelta_col])
+                                      and isevent_loc(subs[value_col], vis[value_col], type='wors',
+                                                      st=skip_local_extrema == 'all',
+                                                      baseline_delta=vis[valuedelta_col])
+                              ) or (isevent_loc(prec[value_col], vis[value_col], type='impr',
+                                                  st=skip_local_extrema == 'all',
+                                                  baseline_delta=vis[valuedelta_col])
+                                      and isevent_loc(subs[value_col], vis[value_col], type='impr',
+                                                      st=skip_local_extrema == 'all',
+                                                      baseline_delta=vis[valuedelta_col])
+                              )) and (vis[value_col] != prec2value)
+            else:
+                local_extr = False
+            # Possibly update baseline
             while proceed and (data_id.loc[bl_idx, 'closest_rel-'] < relapse_to_bl[0]
                     or data_id.loc[bl_idx, 'closest_rel+'] < relapse_to_bl[1]
                     or local_extr):
-
-                # Check if baseline is local extremum:
-                if skip_local_extrema != 'none':
+                if verbose == 2:
+                    print(f'Baseline (visit no.{bl_idx + 1}) is {"a local extremum" if local_extr else "within relapse influence"}: '
+                            + f'moved to visit no.{bl_idx + 2}')
+                bl_idx += 1
+                # Check if updated baseline is local extremum:
+                if bl_idx < nvisits and skip_local_extrema != 'none':
                     prec = data_id.loc[bl_idx, :] if bl_idx == 0 else data_id.loc[bl_idx - 1, :]
                     prec2value = -1 if bl_idx <= 1 else data_id.loc[bl_idx - 2, value_col]
                     subs = data_id.loc[bl_idx, :] if bl_idx == nvisits - 1 else data_id.loc[bl_idx + 1, :]
@@ -796,16 +839,6 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 else:
                     local_extr = False
 
-                if (data_id.loc[bl_idx,'closest_rel-'] >= relapse_to_bl[0]
-                    and data_id.loc[bl_idx,'closest_rel+'] >= relapse_to_bl[1]
-                    and not local_extr):
-                    # If baseline is out of relapse influence and not a local extremum, keep it
-                    break
-
-                if verbose==2:
-                    print(f'Baseline (visit no.{bl_idx + 1}) is {"a local extremum" if local_extr else "within relapse influence"}: '
-                            + f'moved to visit no.{bl_idx + 2}')
-                bl_idx += 1
                 if bl_idx > nvisits - 2:
                     proceed = 0
                     if verbose == 2:
@@ -871,7 +904,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 if verbose == 2:
                     print('%s change at visit no.%d (%s); potential confirmation visits available: no.%s'
                           %(('outcome' if outcome == 'custom' else outcome.upper()), change_idx + 1 ,
-                            display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
+                            display_date(data_id.loc[change_idx, date_col], global_start), #_d_#
                             ', '.join(['%d' %(i + 1) for i in conf_idx])))
 
                 # Confirmation
@@ -885,8 +918,8 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                         and (all([isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
                                               baseline_delta=bl[valuedelta_col])
                                  for x in range(change_idx+1, conf_idx[0]+1)]) # decrease is confirmed at all visits between event and confirmation visit
-                            if check_intermediate else isevent_loc(data_id.loc[conf_idx[0],value_col], bl[value_col],
-                                                        type='impr', baseline_delta=[valuedelta_col]))
+                            if check_intermediate else isevent_loc(data_id.loc[conf_idx[0], value_col], bl[value_col],
+                                                        type='impr', baseline_delta=bl[valuedelta_col]))
                     ):
                     next_change = next((x for x in range(conf_idx[0] + 1, nvisits)
                         if not isevent_loc(data_id.loc[x,value_col], bl[value_col], type='impr',
@@ -916,38 +949,64 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     if valid_impr:
                         sust_idx = nvisits-1 if next_nonsust is None else next_nonsust-1
 
-                        event_type.append('CDI')
-                        event_index.append(change_idx)
-                        bl_date.append(display_date(bl[date_col], global_start)) #_d_#
-                        bl_value.append(bl[value_col])
-                        edate.append(display_date(data_id.loc[change_idx,date_col], global_start)) #_d_#
-                        evalue.append(data_id.loc[change_idx,value_col])
-                        time2event.append(data_id.loc[change_idx,date_col] - data_id.loc[0,date_col]) #.days #_d_#
-                        bl2event.append(data_id.loc[change_idx,date_col] - bl[date_col]) #.days #_d_#
+                        ##########_ev_
+                        ev = {'event_type': 'CDI',
+                              'event_index': change_idx,
+                              'bl_date': bl[date_col],
+                              'bl_value': bl[value_col],
+                              'date': data_id.loc[change_idx,date_col],
+                              'value': data_id.loc[change_idx,value_col],
+                              'time2event': data_id.loc[change_idx,date_col] - data_id.loc[0,date_col],
+                              'bl2event': data_id.loc[change_idx,date_col] - bl[date_col],
+                              'sust_days': data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col],
+                              'sust_last': sust_idx == nvisits - 1}
                         for m in conf_days:
                             confirmed_at = np.intersect1d(conf_t[m], conf_idx)
                             if len(confirmed_at) == 0:
                                 del conf_t[m]
-                                conf_date[m].append(display_date(None, global_start))
-                                conf_value[m].append(float('nan'))
                             else:
-                                conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
-                                conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
-                            # conf[m].append(1 if len(confirmed_at)>0 else 0)
-                            # pira_conf[m].append(0)
-                            pira_conf_date[m].append(display_date(None, global_start))
-                            pira_conf_value[m].append(float('nan'))
-                        sustd.append(data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
-                        sustl.append(sust_idx == nvisits-1) #int(data_id.loc[nvisits-1,value_col] - bl[value_col] <= - delta(bl[value_col]))
+                                ev[f'conf{m}_date'] = data_id.loc[confirmed_at.min(), date_col]
+                                ev[f'conf{m}_value'] = data_id.loc[confirmed_at.min(), value_col]
+                        ##########_ev_
+                        # event_type.append('CDI')
+                        # event_index.append(change_idx)
+                        # bl_date.append(display_date(bl[date_col], global_start)) #_d_#
+                        # bl_value.append(bl[value_col])
+                        # edate.append(display_date(data_id.loc[change_idx,date_col], global_start)) #_d_#
+                        # evalue.append(data_id.loc[change_idx,value_col])
+                        # time2event.append(data_id.loc[change_idx,date_col] - data_id.loc[0,date_col]) #.days #_d_#
+                        # bl2event.append(data_id.loc[change_idx,date_col] - bl[date_col]) #.days #_d_#
+                        # for m in conf_days:
+                        #     confirmed_at = np.intersect1d(conf_t[m], conf_idx)
+                        #     if len(confirmed_at) == 0:
+                        #         del conf_t[m]
+                        #         conf_date[m].append(display_date(None, global_start))
+                        #         conf_value[m].append(float('nan'))
+                        #     else:
+                        #         conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
+                        #         conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
+                        #     # conf[m].append(1 if len(confirmed_at)>0 else 0)
+                        #     # pira_conf[m].append(0)
+                        #     pira_conf_date[m].append(display_date(None, global_start))
+                        #     pira_conf_value[m].append(float('nan'))
+                        # sustd.append(data_id.loc[sust_idx,date_col] - data_id.loc[change_idx,date_col]) #.days #_d_#
+                        # sustl.append(sust_idx == nvisits-1) #int(data_id.loc[nvisits-1,value_col] - bl[value_col] <= - delta(bl[value_col]))
+                        ##########_ev_
 
                         # Print progress info
                         if verbose == 2:
                             print('Found %sCDI (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
                                   %(('' if outcome == 'custom' else (outcome.upper() + '-')), change_idx+1,
-                                    display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
+                                    display_date(data_id.loc[change_idx, date_col], global_start), #_d_#
                                     ', '.join([str(x) for x in conf_t.keys()]),  #_conf_#
                                     sust_idx+1,
-                                    display_date(data_id.loc[sust_idx,date_col], global_start, to_print=True))) #_d_#
+                                    display_date(data_id.loc[sust_idx,date_col], global_start))) #_d_#
+
+                        ##########_ev_
+                        events.append(ev)
+                        event_type.append(ev['event_type'])
+                        event_index.append(ev['event_index'])
+                        ##########_ev_
 
                     else:
                         # If the event is NOT retained (as per `require_sust_days`), we proceed.
@@ -956,13 +1015,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                   ('>=%d days: ' %require_sust_days if require_sust_days<float('inf') else 'entire follow up:'),
                                     'proceed with search')
                         if return_unconfirmed:
-                            unconf.append([subjid,
-                                           display_date(data_id.loc[change_idx, date_col], global_start),
-                                           data_id.loc[change_idx, value_col],
-                                           display_date(bl[date_col], global_start),
-                                           bl[value_col],
-                                           data_id.loc[change_idx, 'closest_rel-'],
-                                           data_id.loc[change_idx, 'closest_rel+']])
+                            unconf.append({subj_col: subjid,
+                                           'date': data_id.loc[change_idx, date_col],
+                                           'value': data_id.loc[change_idx, value_col],
+                                           'bl_date': bl[date_col],
+                                           'bl_value': bl[value_col],
+                                           'closest_rel-': data_id.loc[change_idx, 'closest_rel-'],
+                                           'closest_rel+': data_id.loc[change_idx, 'closest_rel+']})
 
                     # For each m in conf_days, only keep the earliest available confirmation visit:
                     conf_idx = [np.min([x for x in conf_t[m] if x in conf_idx]) for m in
@@ -1053,22 +1112,30 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     # 2. we store the info.
                     if valid_prog:
 
-                        include_event = True  # will become False if searching for specific type of CDW
+                        ##########_ev_
+                        # Initialise event
+                        ev = {}
+                        ##########_ev_
 
-                        nev = len(event_type)
+                        include_event = True  # will become False if searching for specific type of CDW
 
                         sust_idx = nvisits - 1 if next_nonsust is None else next_nonsust - 1
 
                         if (data_id.loc[change_idx, 'closest_rel-'] <= relapse_assoc[0]
                             or data_id.loc[change_idx, 'closest_rel+'] <= relapse_assoc[1]): # event is relapse-associated
-                            if event=='firstPIRA' and baseline in ('fixed', 'roving_impr'):
+                            if event == 'firstPIRA' and baseline in ('fixed', 'roving_impr'):
                                 # skip this event if only searching for PIRA with no CDW-driven re-baseline
-                                if verbose==2:
+                                if verbose == 2:
                                     print('Worsening confirmed but not a PIRA event: skipped')
                                 include_event = False
                             else:
-                                event_type.append('RAW')
-                                event_index.append(change_idx)
+                                ##########_ev_
+                                ev['event_type'] = 'RAW'
+                                ev['event_index'] = change_idx
+                                ##########_ev_
+                                # event_type.append('RAW')
+                                # event_index.append(change_idx)
+                                ##########_ev_
                         else: # event is not relapse-associated
                             if event == 'firstRAW' and baseline in ('fixed', 'roving_impr'):
                                 # skip this event if only searching for RAW with no CDW-driven re-baseline
@@ -1126,7 +1193,7 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                             t0 = t - relapse_indep[point][0]
                                         if relapse_indep[point][1] is not None:
                                             t1 = t + relapse_indep[point][1]
-                                            if t1>t0:
+                                            if t1 > t0:
                                                 intervals[ic].append([t0,t1])
                                 rel_inbetween = [np.logical_or.reduce([(a[0]<=relapse_dates) & (relapse_dates<=a[1])
                                                 for a in intervals[ic]]).any() for ic in conf_idx]
@@ -1141,63 +1208,102 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                                         confirmed_at = np.intersect1d(pconf_t[m], pconf_idx)
                                         if len(confirmed_at) == 0:
                                             del pconf_t[m]
-                                            pira_conf_date[m].append(display_date(None, global_start))
-                                            pira_conf_value[m].append(float('nan'))
+                                            ##########_ev_
+                                            # pira_conf_date[m].append(display_date(None, global_start))
+                                            # pira_conf_value[m].append(float('nan'))
+                                            ##########_ev_
                                         else:
-                                            pira_conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
-                                            pira_conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
+                                            ##########_ev_
+                                            ev[f'PIRA_conf{m}_date'] = data_id.loc[confirmed_at.min(), date_col]
+                                            ev[f'PIRA_conf{m}_value'] = data_id.loc[confirmed_at.min(), value_col]
+                                            ##########_ev_
+                                            # pira_conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
+                                            # pira_conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
+                                            ##########_ev_
                                         #pira_conf[m].append(int(len(confirmed_at)>0))
 
-                                    event_type.append('PIRA')
-                                    event_index.append(change_idx)
+                                    ##########_ev_
+                                    ev['event_type'] = 'PIRA'
+                                    ev['event_index'] = change_idx
+                                    ##########_ev_
+                                    # event_type.append('PIRA')
+                                    # event_index.append(change_idx)
+                                    ##########_ev_
                                 elif event == 'firstPIRA' and baseline in ('fixed', 'roving_impr'):  # if pira is not confirmed, and we're not using it for rebaseline
                                     if verbose == 2:
                                         print('Worsening confirmed but not a PIRA event: skipped')
                                     include_event = False
                                 else:
-                                    event_type.append('CDW')
-                                    event_index.append(change_idx)
+                                    ##########_ev_
+                                    ev['event_type'] = 'CDW'
+                                    ev['event_index'] = change_idx
+                                    ##########_ev_
+                                    # event_type.append('CDW')
+                                    # event_index.append(change_idx)
+                                    ##########_ev_
                                 # )*
 
                         # Store info
                         if include_event:
-                            # **(
-                            if event_type[-1] != 'PIRA':
-                                for m in conf_days:
-                                    # pira_conf[m].append(0)
-                                    pira_conf_date[m].append(display_date(None, global_start))
-                                    pira_conf_value[m].append(float('nan'))
-
-                            bl_date.append(display_date(bl[date_col], global_start)) #_d_#
-                            bl_value.append(bl[value_col])
-                            edate.append(display_date(data_id.loc[change_idx, date_col], global_start)) #_d_#
-                            evalue.append(data_id.loc[change_idx, value_col])
-                            time2event.append(data_id.loc[change_idx, date_col] - data_id.loc[0,date_col]) #.days #_d_#
-                            bl2event.append(data_id.loc[change_idx, date_col] - bl[date_col]) #.days #_d_#
+                            ##########_ev_
+                            ev['bl_date'] = bl[date_col]
+                            ev['bl_value'] = bl[value_col]
+                            ev['date'] = data_id.loc[change_idx, date_col]
+                            ev['value'] = data_id.loc[change_idx, value_col]
+                            ev['time2event'] = data_id.loc[change_idx, date_col] - data_id.loc[0,date_col]
+                            ev['bl2event'] = data_id.loc[change_idx, date_col] - bl[date_col]
                             for m in conf_days:
                                 confirmed_at = np.intersect1d(conf_t[m], conf_idx)
                                 if len(confirmed_at)==0:
                                     del conf_t[m]
-                                    conf_date[m].append(display_date(None, global_start))
-                                    conf_value[m].append(float('nan'))
                                 else:
-                                    conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
-                                    conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
-                                # conf[m].append(1 if len(confirmed_at) > 0 else 0)
-                            sustd.append(data_id.loc[sust_idx, date_col] - data_id.loc[change_idx, date_col]) #.days #_d_#
-                            sustl.append(sust_idx == nvisits-1)
+                                    ev[f'conf{m}_date'] = data_id.loc[confirmed_at.min(), date_col]
+                                    ev[f'conf{m}_value'] = data_id.loc[confirmed_at.min(), value_col]
+                            ev['sust_days'] = data_id.loc[sust_idx, date_col] - data_id.loc[change_idx, date_col]
+                            ev['sust_last'] = sust_idx == nvisits - 1
+                            ##########_ev_
+                            # if event_type[-1] != 'PIRA':
+                            #     for m in conf_days:
+                            #         # pira_conf[m].append(0)
+                            #         pira_conf_date[m].append(display_date(None, global_start))
+                            #         pira_conf_value[m].append(float('nan'))
+                            #
+                            # bl_date.append(display_date(bl[date_col], global_start)) #_d_#
+                            # bl_value.append(bl[value_col])
+                            # edate.append(display_date(data_id.loc[change_idx, date_col], global_start)) #_d_#
+                            # evalue.append(data_id.loc[change_idx, value_col])
+                            # time2event.append(data_id.loc[change_idx, date_col] - data_id.loc[0,date_col]) #.days #_d_#
+                            # bl2event.append(data_id.loc[change_idx, date_col] - bl[date_col]) #.days #_d_#
+                            # for m in conf_days:
+                            #     confirmed_at = np.intersect1d(conf_t[m], conf_idx)
+                            #     if len(confirmed_at)==0:
+                            #         del conf_t[m]
+                            #         conf_date[m].append(display_date(None, global_start))
+                            #         conf_value[m].append(float('nan'))
+                            #     else:
+                            #         conf_date[m].append(display_date(data_id.loc[confirmed_at.min(), date_col], global_start))
+                            #         conf_value[m].append(data_id.loc[confirmed_at.min(), value_col])
+                            #     # conf[m].append(1 if len(confirmed_at) > 0 else 0)
+                            # sustd.append(data_id.loc[sust_idx, date_col] - data_id.loc[change_idx, date_col]) #.days #_d_#
+                            # sustl.append(sust_idx == nvisits-1)
+                            ##########_ev_
 
-                            # Print info
+                            # Print progress info
                             if verbose == 2:
                                 print('Found %sCDW%s (visit no.%d, %s) confirmed at %s weeks, sustained up to visit no.%d (%s)'
                                       %(('' if outcome == 'custom' else (outcome.upper() + '-')),
-                                        ('' if event_type[-1] == 'CDW' else f' ({event_type[-1]})'), change_idx+1,
-                                        display_date(data_id.loc[change_idx, date_col], global_start, to_print=True), #_d_#
-                                        ', '.join([str(x) for x in (pconf_t.keys() if event_type[-1] == 'PIRA'
+                                        ('' if ev['event_type'] == 'CDW' else f' ({ev["event_type"]})'), change_idx+1,
+                                        display_date(data_id.loc[change_idx, date_col], global_start), #_d_#
+                                        ', '.join([str(x) for x in (pconf_t.keys() if ev['event_type'] == 'PIRA'
                                                                     else conf_t.keys())]), #_conf_#
-                                        sust_idx+1,
-                                        display_date(data_id.loc[sust_idx, date_col], global_start, to_print=True))) #_d_#
-                            # )**
+                                        sust_idx + 1,
+                                        display_date(data_id.loc[sust_idx, date_col], global_start))) #_d_#
+
+                            ##########_ev_
+                            events.append(ev)
+                            event_type.append(ev['event_type'])
+                            event_index.append(ev['event_index'])
+                            ##########_ev_
 
                     else:
                         # If the event is NOT retained as per `require_sust_days` (i.e., valid_prog==0):, we proceed.
@@ -1210,15 +1316,16 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                             print('Change confirmed but not sustained for >=%d days: proceed with search'
                                   %require_sust_days)
                         if return_unconfirmed:
-                            unconf.append([subjid,
-                                           display_date(data_id.loc[change_idx, date_col], global_start),
-                                           data_id.loc[change_idx, value_col],
-                                           display_date(bl[date_col], global_start),
-                                           bl[value_col],
-                                           data_id.loc[change_idx, 'closest_rel-'],
-                                           data_id.loc[change_idx, 'closest_rel+']])
+                            unconf.append({subj_col: subjid,
+                                           'date': data_id.loc[change_idx, date_col],
+                                           'value': data_id.loc[change_idx, value_col],
+                                           'bl_date': bl[date_col],
+                                           'bl_value': bl[value_col],
+                                           'closest_rel-': data_id.loc[change_idx, 'closest_rel-'],
+                                           'closest_rel+': data_id.loc[change_idx, 'closest_rel+']})
 
-                    if len(conf_t)>0:
+
+                    if len(conf_t) > 0:
                         # For each m in conf_days, only keep the earliest available confirmation visit
                         conf_idx = [np.min([x for x in conf_t[m] if x in conf_idx]) for m in conf_t.keys()]
 
@@ -1273,13 +1380,13 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     if verbose == 2:
                         print('Change not confirmed: proceed with search')
                     if return_unconfirmed and change_idx is not None:
-                        unconf.append([subjid,
-                                       display_date(data_id.loc[change_idx, date_col], global_start),
-                                       data_id.loc[change_idx, value_col],
-                                       display_date(bl[date_col], global_start),
-                                       bl[value_col],
-                                       data_id.loc[change_idx, 'closest_rel-'],
-                                       data_id.loc[change_idx, 'closest_rel+']])
+                        unconf.append({subj_col: subjid,
+                                       'date': data_id.loc[change_idx, date_col],
+                                       'value': data_id.loc[change_idx, value_col],
+                                       'bl_date': bl[date_col],
+                                       'bl_value': bl[value_col],
+                                       'closest_rel-': data_id.loc[change_idx, 'closest_rel-'],
+                                       'closest_rel+': data_id.loc[change_idx, 'closest_rel+']})
 
             # Relapse-based rebaseline: if search_idx crossed a relapse, move baseline after it.
             # (unless search_idx is after the relapse but within its influence as per `relapse_assoc[0]`: could be a RAW)
@@ -1320,12 +1427,15 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                 if verbose == 2:
                     print('\'%s\' already found: end process' %event)
 
-        subj_index = results[results[subj_col]==subjid].index
-
         # Possibly reduce event_type to a subset (based on `event` argument)
-        if len(event_type) > 1:
-
-            event_type = event_type[1:]  # remove first empty event
+        ##########_ev_
+        # subj_index = results[results[subj_col] == subjid].index
+        # if len(event_type) > 1:
+        ##########_ev_
+        if len(events) > 0:
+            ##########_ev_
+            # event_type = event_type[1:]  # remove first empty event
+            ##########_ev_
 
             # Spot duplicate events
             # (can only occur if relapse_rebl is enabled - in that case, only keep last detected)
@@ -1340,10 +1450,12 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
             event_order = np.argsort(event_index)
             event_order = event_order[diff:]  # eliminate duplicates (those marked with -1)
 
-            event_type = [event_type[i] for i in event_order]
+            ##########_ev_
+            # event_type = [event_type[i] for i in event_order]
+            ##########_ev_
 
             if event.startswith('first'):
-                impr_idx = next((x for x in range(len(event_type)) if event_type[x]=='CDI'), None)
+                impr_idx = next((x for x in range(len(event_type)) if event_type[x] == 'CDI'), None)
                 prog_idx = next((x for x in range(len(event_type)) if event_type[x] in ('CDW', 'RAW', 'PIRA')), None)
                 raw_idx = next((x for x in range(len(event_type)) if event_type[x] == 'RAW'), None)
                 pira_idx = next((x for x in range(len(event_type)) if event_type[x] == 'PIRA'), None)
@@ -1357,60 +1469,92 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
                     first_events = [raw_idx]
                 first_events = [0] if event=='first' else np.unique([
                     ii for ii in first_events if ii is not None]) # np.unique() returns the values already sorted
-                event_type = [event_type[ii] for ii in first_events]
+                ##########_ev_
+                # event_type = [event_type[ii] for ii in first_events]
+                ##########_ev_
                 event_order = [event_order[ii] for ii in first_events]
 
         else:
-            event_type = []
+            ##########_ev_
+            event_order = []
+            ##########_ev_
+            # event_type = []  # remove first empty event
+            ##########_ev_
 
-        # Build results with updated event_type
-        if len(event_type) > 0:
+        ##########_ev_
+        # Update event list for subject
+        events = [events[ii] for ii in event_order]
+        event_type = [event_type[ii] for ii in event_order]
+        # Build subject-level df
+        if len(events) > 0:
             # 1. subject has events
-            results.drop(subj_index[len(event_type):], inplace=True)
-            results.loc[results[subj_col]==subjid, 'event_type'] = event_type
-            results.loc[results[subj_col]==subjid, 'bl_date'] = [bl_date[i] for i in event_order]
-            results.loc[results[subj_col]==subjid, 'bl_value'] = [bl_value[i] for i in event_order]
-            results.loc[results[subj_col]==subjid, 'date'] = [edate[i] for i in event_order]
-            results.loc[results[subj_col]==subjid, 'value'] = [evalue[i] for i in event_order]
-            results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
-            results.loc[results[subj_col]==subjid, 'time2event'] = [time2event[i] for i in event_order]
-            results.loc[results[subj_col]==subjid, 'bl2event'] = [bl2event[i] for i in event_order]
-            for m in conf_days:
-                # results.loc[results[subj_col]==subjid, f'conf{m}'] = [conf[m][i] for i in event_order]
-                results.loc[results[subj_col]==subjid, f'conf{m}_date'] = [conf_date[m][i] for i in event_order]
-                results.loc[results[subj_col]==subjid, f'conf{m}_value'] = [conf_value[m][i] for i in event_order]
-                # results.loc[results[subj_col]==subjid, f'PIRA_conf{m}'] = [pira_conf[m][i] for i in event_order]
-                results.loc[results[subj_col]==subjid, f'PIRA_conf{m}_date'] = [pira_conf_date[m][i] for i in event_order]
-                results.loc[results[subj_col]==subjid, f'PIRA_conf{m}_value'] = [pira_conf_value[m][i] for i in event_order]
-            results.loc[results[subj_col]==subjid, 'sust_days'] = [sustd[i] for i in event_order]
-            results.loc[results[subj_col]==subjid, 'sust_last'] = [sustl[i] for i in event_order]
-
+            for n, ev in enumerate(events):
+                del ev['event_index']
+                ev[subj_col] = subjid
+                ev['nevent'] = n + 1
+                ev['total_fu'] = total_fu[subjid]
         elif include_stable:
             # 2. subject has no events but is included
-            results.drop(subj_index[1:], inplace=True)
-            results.loc[results[subj_col]==subjid, 'nevent'] = 0
-            results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
-            results.loc[results[subj_col]==subjid, 'time2event'] = total_fu[subjid]
-            # results.loc[results[subj_col]==subjid, 'date'] = display_date(data_id.loc[nvisits - 1, date_col],
-            #                                                               global_start)
+            events = [{subj_col: subjid,
+                       'event_type': '',  # to avoid NaNs
+                       'nevent': 0,
+                       'total_fu': total_fu[subjid],
+                       'time2event': total_fu[subjid]}]
 
-        else:
-            # 3. subject has no events and is excluded
-            results.drop(subj_index, inplace=True)
+        subject_results = subject_results + events
 
-        CDI = (results.loc[results[subj_col] == subjid, 'event_type'] == 'CDI').sum()
-        CDW = results.loc[results[subj_col] == subjid, 'event_type'].isin(('CDW', 'RAW', 'PIRA')).sum()
-        RAW = (results.loc[results[subj_col] == subjid, 'event_type'] == 'RAW').sum()
-        PIRA = (results.loc[results[subj_col] == subjid, 'event_type'] == 'PIRA').sum()
+        CDI = len([tt for tt in event_type if tt == 'CDI'])
+        CDW = len([tt for tt in event_type if tt in ('CDW', 'RAW', 'PIRA')])
+        RAW = len([tt for tt in event_type if tt == 'RAW'])
+        PIRA = len([tt for tt in event_type if tt == 'PIRA'])
         summary.loc[subjid, ['event_sequence', 'CDI', 'CDW', 'RAW', 'PIRA']] = [
             ', '.join(event_type), CDI, CDW, RAW, PIRA]
+        ##########_ev_
+        # # Build results with updated event_type
+        # if len(event_type) > 0:
+        #     # 1. subject has events
+        #     results.drop(subj_index[len(event_type):], inplace=True)
+        #     results.loc[results[subj_col]==subjid, 'event_type'] = event_type
+        #     results.loc[results[subj_col]==subjid, 'bl_date'] = [bl_date[i] for i in event_order]
+        #     results.loc[results[subj_col]==subjid, 'bl_value'] = [bl_value[i] for i in event_order]
+        #     results.loc[results[subj_col]==subjid, 'date'] = [edate[i] for i in event_order]
+        #     results.loc[results[subj_col]==subjid, 'value'] = [evalue[i] for i in event_order]
+        #     results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
+        #     results.loc[results[subj_col]==subjid, 'time2event'] = [time2event[i] for i in event_order]
+        #     results.loc[results[subj_col]==subjid, 'bl2event'] = [bl2event[i] for i in event_order]
+        #     for m in conf_days:
+        #         # results.loc[results[subj_col]==subjid, f'conf{m}'] = [conf[m][i] for i in event_order]
+        #         results.loc[results[subj_col]==subjid, f'conf{m}_date'] = [conf_date[m][i] for i in event_order]
+        #         results.loc[results[subj_col]==subjid, f'conf{m}_value'] = [conf_value[m][i] for i in event_order]
+        #         # results.loc[results[subj_col]==subjid, f'PIRA_conf{m}'] = [pira_conf[m][i] for i in event_order]
+        #         results.loc[results[subj_col]==subjid, f'PIRA_conf{m}_date'] = [pira_conf_date[m][i] for i in event_order]
+        #         results.loc[results[subj_col]==subjid, f'PIRA_conf{m}_value'] = [pira_conf_value[m][i] for i in event_order]
+        #     results.loc[results[subj_col]==subjid, 'sust_days'] = [sustd[i] for i in event_order]
+        #     results.loc[results[subj_col]==subjid, 'sust_last'] = [sustl[i] for i in event_order]
+        #
+        # elif include_stable:
+        #     # 2. subject has no events but is included
+        #     results.drop(subj_index[1:], inplace=True)
+        #     results.loc[results[subj_col]==subjid, 'nevent'] = 0
+        #     results.loc[results[subj_col]==subjid, 'total_fu'] = total_fu[subjid]
+        #     results.loc[results[subj_col]==subjid, 'time2event'] = total_fu[subjid]
+        #     # results.loc[results[subj_col]==subjid, 'date'] = display_date(data_id.loc[nvisits - 1, date_col],
+        #     #                                                               global_start)
+        #
+        # else:
+        #     # 3. subject has no events and is excluded
+        #     results.drop(subj_index, inplace=True)
+        #
+        # CDI = (results.loc[results[subj_col] == subjid, 'event_type'] == 'CDI').sum()
+        # CDW = results.loc[results[subj_col] == subjid, 'event_type'].isin(('CDW', 'RAW', 'PIRA')).sum()
+        # RAW = (results.loc[results[subj_col] == subjid, 'event_type'] == 'RAW').sum()
+        # PIRA = (results.loc[results[subj_col] == subjid, 'event_type'] == 'PIRA').sum()
+        # summary.loc[subjid, ['event_sequence', 'CDI', 'CDW', 'RAW', 'PIRA']] = [
+        #     ', '.join(event_type), CDI, CDW, RAW, PIRA]
+        ##########_ev_
 
         if verbose == 2:
-            print('Event sequence: %s' %(', '.join(event_type) if len(event_type)>0 else '-'))
-
-    results['CDW_type'] = results['event_type'].map(lambda x: x if x in ('PIRA', 'RAW') else
-                                                      ('undefined' if x == 'CDW' else ''))
-    results.loc[results['event_type'].isin(('CDW', 'PIRA', 'RAW')), 'event_type'] = 'CDW'
+            print('Event sequence: %s' %(', '.join(event_type) if len(event_type) > 0 else '-'))
 
     if verbose >= 1:
         print(f'\n---\nOutcome: {outcome}\nConfirmation {"over" if check_intermediate else "at"}: '
@@ -1419,17 +1563,39 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
         + (' (and post-relapse re-baseline)' if relapse_rebl else '')
         + f'\nRelapse influence (baseline): {relapse_to_bl} days\nRelapse influence (event): {relapse_to_event} days'
         + f'\nRelapse influence (confirmation): {relapse_to_conf} days\nEvents detected: {event}')
-        print('---\nTotal subjects: %d\n---\nSubjects with CDW: %d (PIRA: %d; RAW: %d)'
-              %(nsub, (summary['CDW'] > 0).sum(),
-                (summary['PIRA'] > 0).sum(), (summary['RAW'] > 0).sum()))
+        print(f'---\nTotal subjects: {nsub}')
+        if event != 'firstCDI':
+            print('---\nSubjects with %s: %d%s'
+                  %('PIRA' if event == 'firstPIRA' else ('RAW' if event == 'firstRAW' else 'CDW'), (summary['CDW'] > 0).sum(),
+                    '' if event in ('firstPIRA', 'firstRAW')
+                    else f' (PIRA: {(summary["PIRA"] > 0).sum()}; RAW: {(summary["RAW"] > 0).sum()})'))
         if event not in ('firstCDW', 'firstPIRA', 'firstRAW'):
-            print('Subjects with CDI: %d' %(summary['CDI'] > 0).sum())
+            print(f'Subjects with CDI: {(summary["CDI"] > 0).sum()}')
         if event == 'multiple':
             print('---\nCDW events: %d (PIRA: %d; RAW: %d)'
                   %(summary['CDW'].sum(), summary['PIRA'].sum(), summary['RAW'].sum()))
             print('CDI events: %d' %(summary['CDI'].sum()))
 
-    columns = results.columns
+    ##########_ev_
+    results = pd.DataFrame(subject_results)
+    ##########_ev_
+
+    # Convert date columns to datetime format (relative to global_start)
+    if date_format != "day":
+        for col in [c for c in results.columns if c.endswith('date')]:
+            results[col] = num_to_date(results[col].values, global_start)
+
+    results['CDW_type'] = results['event_type'].map(lambda x: x if x in ('PIRA', 'RAW') else
+                                                      ('undefined' if x == 'CDW' else ''))
+    results.loc[results['event_type'].isin(('CDW', 'PIRA', 'RAW')), 'event_type'] = 'CDW'
+
+    # Reorder columns
+    columns = ([subj_col, 'nevent', 'event_type', 'CDW_type', 'bl_date', 'bl_value', 'date', 'value',
+               'total_fu', 'time2event', 'bl2event']
+               + [f'conf{m}_date' for m in conf_days] + [f'conf{m}_value' for m in conf_days]
+               + [f'PIRA_conf{m}_date' for m in conf_days] + [f'PIRA_conf{m}_value' for m in conf_days]
+               + ['sust_days', 'sust_last'])  #results.columns
+    # Subset columns
     if not include_dates:
         columns = [c for c in columns if not c.endswith('date')]
     if not include_value:
@@ -1451,8 +1617,11 @@ def MSprog(data, subj_col, value_col, date_col, outcome,
     results = results[columns]
 
     if return_unconfirmed:
-        unconfirmed = pd.DataFrame(unconf, columns=[subj_col, 'date', 'value', 'bl_date', 'bl_value',
-                                                    'closest_rel-', 'closest_rel+'])
+        unconfirmed = pd.DataFrame(unconf)
+        # Convert date columns to datetime format (relative to global_start)
+        if date_format != "day":
+            for col in [c for c in unconfirmed.columns if c.endswith('date')]:
+                unconfirmed[col] = num_to_date(unconfirmed[col].values, global_start)
 
     for w in warning_msgs:
         warnings.warn(w)
@@ -1877,22 +2046,32 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                 print('Found multiple visits on the same day: only keeping last')
         first_visit = data_id[date_col].min()
         if relapse is not None:
-            relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].reset_index(drop=True)
+            relapse_id = relapse.loc[relapse[rsubj_col] == subjid, :].reset_index(drop=True)
             relapse_id = relapse_id.loc[relapse_id[rdate_col] >= first_visit - relapse_to_event[0], :]
                                                         # ignore relapses occurring before first visit
             relapse_dates = relapse_id[rdate_col].values
-            relapse_df = pd.DataFrame([relapse_dates]*len(data_id))
-            relapse_df['visit'] = data_id[date_col].values
-            dist = relapse_df.drop(['visit'],axis=1).subtract(relapse_df['visit'], axis=0) #_d_# .apply(lambda x : pd.to_timedelta(x).dt.days)
-            distm = - dist.mask(dist > 0)  # other=-float('inf')
-            distp = dist.mask(dist < 0)  # other=float('inf')
-            distm[distm.isna()] = float('inf')
-            distp[distp.isna()] = float('inf')
-            data_id['closest_rel-'] = float('inf') if all(distm.isna()) else distm.min(axis=1)
-            data_id['closest_rel+'] = float('inf') if all(distp.isna()) else distp.min(axis=1)
         else:
-            data_id['closest_rel-'] = float('inf')
-            data_id['closest_rel+'] = float('inf')
+            relapse_dates = []
+
+        # Visit distance from closest previous/next relapse
+        visits = data_id[date_col].to_numpy()
+        rels = np.asarray(relapse_dates)
+        if rels.size > 0:
+            # Relapse - visit
+            dist = (rels[None, :] - visits[:, None]).astype(float)  # to allow inf
+            # Distance to closest previous relapse
+            distm = -dist.copy()
+            distm[distm < 0] = np.inf
+            closest_rel_before = distm.min(axis=1)
+            # Distance to closest next relapse
+            distp = dist.copy()
+            distp[distp < 0] = np.inf
+            closest_rel_after = distp.min(axis=1)
+        else:
+            closest_rel_before = np.full(len(visits), np.inf)
+            closest_rel_after = np.full(len(visits), np.inf)
+        data_id['closest_rel-'] = closest_rel_before
+        data_id['closest_rel+'] = closest_rel_after
 
         proceed = 1
         search_idx = 0
@@ -1919,7 +2098,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                 conf_idx = np.unique([x for i in range(len(conf_idx)) for x in conf_idx[i]])
                 if verbose == 2:
                     print(f'Found value {">=" if worsening == "increase" else "<="} {milestone} at visit no. {milestone_idx + 1} '
-                          + f'({display_date(data_id.loc[milestone_idx,date_col], global_start, to_print=True)}); '
+                          + f'({display_date(data_id.loc[milestone_idx,date_col], global_start)}); '
                           + f'potential confirmation visits available: no. {", ".join(["%d" %(i + 1) for i in conf_idx])}')
 
                 if (len(conf_idx) > 0  # confirmation visits available
@@ -1950,7 +2129,7 @@ def value_milestone(data, milestone, subj_col, value_col, date_col, outcome,
                         if verbose == 2:
                             print(f'{"Imputed" if milestone_idx == nvisits - 1 else "Confirmed"} value '
                               + f'{">=" if worsening == "increase" else "<="} {milestone} at visit no. {milestone_idx + 1} '
-                              + f'({display_date(data_id.loc[milestone_idx, date_col], global_start, to_print=True)}): end process')
+                              + f'({display_date(data_id.loc[milestone_idx, date_col], global_start)}): end process')
                     else:
                         search_idx = next_nonsust + 1
                         if verbose == 2:
@@ -2340,18 +2519,28 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
         data_id = data_sep.loc[data_sep[subj_col]==subjid,:].copy().reset_index(drop=True)
         nvisits = len(data_id)
 
-        relapse_id = relapse.loc[relapse[rsubj_col]==subjid,:].reset_index(drop=True)
-
+        relapse_id = relapse.loc[relapse[rsubj_col] == subjid,:].reset_index(drop=True)
         relapse_dates = relapse_id[rdate_col].values
-        relapse_df = pd.DataFrame([relapse_dates]*len(data_id))
-        relapse_df['visit'] = data_id[date_col].values
-        dist = relapse_df.drop(['visit'],axis=1).subtract(relapse_df['visit'], axis=0)
-        distm = - dist.mask(dist > 0)  # other=-float('inf')
-        distp = dist.mask(dist < 0)  # other=float('inf')
-        distm[distm.isna()] = float('inf')
-        distp[distp.isna()] = float('inf')
-        data_id['closest_rel-'] = distm.min(axis=1)  #float('inf') if all(distm.isna()) else distm.min(axis=1)
-        data_id['closest_rel+'] = distp.min(axis=1)  #float('inf') if all(distp.isna()) else distp.min(axis=1)
+
+        # Visit distance from closest previous/next relapse
+        visits = data_id[date_col].to_numpy()
+        rels = np.asarray(relapse_dates)
+        if rels.size > 0:
+            # Relapse - visit
+            dist = (rels[None, :] - visits[:, None]).astype(float)  # to allow inf
+            # Distance to closest previous relapse
+            distm = -dist.copy()
+            distm[distm < 0] = np.inf
+            closest_rel_before = distm.min(axis=1)
+            # Distance to closest next relapse
+            distp = dist.copy()
+            distp[distp < 0] = np.inf
+            closest_rel_after = distp.min(axis=1)
+        else:
+            closest_rel_before = np.full(len(visits), np.inf)
+            closest_rel_after = np.full(len(visits), np.inf)
+        data_id['closest_rel-'] = closest_rel_before
+        data_id['closest_rel+'] = closest_rel_after
 
         # First visit out of relapse influence
         rel_free_bl = next((x for x in range(len(data_id))
@@ -2377,7 +2566,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             # data_id.loc[:rel_free_bl-1, bump_col] = data_id.loc[:rel_free_bl-1, bump_col] + bump.loc[:rel_free_bl-1]
             if verbose == 2:
                 print('Moving global baseline to first visit out of relapse influence (visit #%d, %s)'
-                      %(rel_free_bl + 1, display_date(data_id.loc[0, date_col], global_start, to_print=True)))
+                      %(rel_free_bl + 1, display_date(data_id.loc[0, date_col], global_start)))
         else:
             global_bl = data_id.loc[0, :].copy()
         nvisits = len(data_id)
@@ -2389,18 +2578,29 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             print('Relapses left to analyse: %d' %len(relapse_id))
 
         ##########
-        visit_dates = data_id[date_col].values
-        relapse_df = pd.DataFrame([visit_dates]*len(relapse_id))
-        relapse_df['relapse'] = relapse_id[rdate_col].values
-        dist = relapse_df.drop(['relapse'],axis=1).subtract(relapse_df['relapse'], axis=0)
-        distm = - dist.mask(dist>0)
-        distp = dist.mask(dist<0)
-        distm[distm.isna()] = float('inf')
-        distp[distp.isna()] = float('inf')
-        relapse_id['closest_vis-'] = distm.idxmin(axis=1)  #None if all(distm.isna()) else distm.idxmin(axis=1)
-        relapse_id['closest_vis+'] = distp.idxmin(axis=1)  #None if all(distp.isna()) else distp.idxmin(axis=1)
-        relapse_id.loc[distm.min(axis=1) == float('inf'), 'closest_vis-'] = float('nan')
-        relapse_id.loc[distp.min(axis=1) == float('inf'), 'closest_vis+'] = float('nan')
+        # Relapse distance from closest previous/next visit
+        visit_dates = data_id[date_col].to_numpy()
+        rel_dates = relapse_id[rdate_col].to_numpy()
+        if rel_dates.size > 0:
+            # Distance from visit to relapse
+            delta = rel_dates[:, None] - visit_dates[None, :]
+            # Previous visit: visit <= relapse, choose smallest nonnegative relapse-visit
+            prev_dist = delta.copy()
+            prev_dist[prev_dist < 0] = np.inf
+            # Next visit: visit >= relapse, choose smallest nonnegative visit-relapse
+            next_dist = -delta.copy()
+            next_dist[next_dist < 0] = np.inf
+            closest_vis_before = prev_dist.argmin(axis=1).astype(float)
+            closest_vis_after = next_dist.argmin(axis=1).astype(float)
+            no_prev = np.isinf(prev_dist.min(axis=1))
+            no_next = np.isinf(next_dist.min(axis=1))
+            closest_vis_before[no_prev] = np.nan
+            closest_vis_after[no_next] = np.nan
+        else:
+            closest_vis_before = np.full(len(rel_dates), np.nan)
+            closest_vis_after = np.full(len(rel_dates), np.nan)
+        relapse_id["closest_vis-"] = closest_vis_before
+        relapse_id["closest_vis+"] = closest_vis_after
         ##########
 
         delta_raw, raw_dates = [], []
@@ -2417,7 +2617,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
             if verbose == 2:
                 print('Relapse #%d/%d (%s)' %(irel+1, len(relapse_id),
-                        display_date(relapse_id.loc[irel, rdate_col], global_start, to_print=True)
+                        display_date(relapse_id.loc[irel, rdate_col], global_start)
                                                 ))
 
             # Baseline set to last visit before the relapse and out of its influence (as per `relapse_to_bl`and `relapse_assoc`):
@@ -2435,7 +2635,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
             if verbose == 2:
                 print('Baseline reset to last visit before the relapse and out of its influence%s (%s, %s=%.1f)'
                       %(': visit #' + str(bl_idx + 1) if bl_idx is not None else '',
-                        display_date(bl[date_col], global_start, to_print=True),
+                        display_date(bl[date_col], global_start),
                         outcome, bl[value_col]))
 
             # Identify the first possible event
@@ -2468,7 +2668,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
 
                 if verbose == 2 and not stable:
                     print('%s change found: visit #%d (%s, %s=%.1f)' %(outcome, change_idx + 1,
-                                display_date(data_id.loc[change_idx, date_col], global_start, to_print=True),
+                                display_date(data_id.loc[change_idx, date_col], global_start),
                                 outcome, data_id.loc[change_idx, value_col]))
 
                 if (change_idx is None  # no change
@@ -2537,7 +2737,7 @@ def separate_ri_ra(data, subj_col, value_col, date_col, outcome, relapse,
                         if verbose == 2:
                             print('Confirmed%s RAW on visit #%d (%s); delta = %.1f, max bump delta = %.1f'
                                   %(' sustained' if sust_raw_days > 0 else '', change_idx + 1,
-                                    display_date(data_id.loc[change_idx, date_col], global_start, to_print=True),
+                                    display_date(data_id.loc[change_idx, date_col], global_start),
                                   value_change, bump.max()))
                     else:
                         end_idx = next_nonsust - 1

@@ -1,19 +1,23 @@
 <br/>
 
-> 🚧 **This repository is under active development. 
+> [!WARNING]
+> **🚧 This repository is under active development. 🚧 <br>
 > Please make sure you are using the latest version of the library 
 > (as per [PyPI](https://pypi.org/project/pymsprog/)) – or at least v1.0.0, 
 > which is functionally stable, though some minor aspects may still change ahead of a full 
-> stable release.** 🚧
+> stable release.** 
+
+[//]: # (<br>)
+
+[//]: # ()
+[//]: # (> 📣 **What’s new in latest version**  )
+[//]: # (> ...)
 
 # pymsprog: reproducible assessment of disability course in MS
 
 <p align="center">
   <img src="docs/source/_static/logo_py.png" width="200"/>
 </p>
-
-[//]: # ("https://raw.githubusercontent.com/noemimontobbio/py-MSprog/main/docs/source/_static/logo_py.png")
-[//]: # ("docs/source/_static/logo_py.png")
 
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)
 

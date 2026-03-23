@@ -2,6 +2,15 @@
 
 ---
 
+# 1.0.6 — 2026-03-23
+
+More robust accumulation of events + calculation of distance between visits and relapses.
+
+### Changed
+- Functions MSprog(), value_milestone(), separate_ri_ra()
+
+---
+
 # 1.0.5 — 2026-03-17
 
 Date/value columns & 'event_type'/'CDW_type' columns in results, outcome argument values ('custom').
